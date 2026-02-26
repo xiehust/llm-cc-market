@@ -6,7 +6,7 @@ All training in LLaMA-Factory uses YAML config files passed to `llamafactory-cli
 
 ```yaml
 # qwen3_lora_sft.yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: sft
@@ -45,7 +45,7 @@ CUDA_VISIBLE_DEVICES=0 ~/lmf-env/bin/llamafactory-cli train qwen3_lora_sft.yaml
 
 ```yaml
 # qwen3_qlora_sft.yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: sft
@@ -79,7 +79,7 @@ plot_loss: true
 
 ```yaml
 # qwen3_full_sft.yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: sft
@@ -111,7 +111,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 FORCE_TORCHRUN=1 \
 ## LoRA SFT with Unsloth (170% Speed)
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 use_unsloth: true
 
@@ -138,7 +138,7 @@ Note: Unsloth is incompatible with DeepSpeed ZeRO-3. Use ZeRO-2 or single-GPU.
 ## LoRA with Sequence Packing (High Throughput)
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 flash_attn: fa2
 
@@ -164,7 +164,7 @@ bf16: true
 ## LoRA with Liger Kernel
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 enable_liger_kernel: true
 
@@ -218,7 +218,7 @@ pissa_iter: 16
 ## OFT (Orthogonal Fine-Tuning, v0.9.4+)
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: sft
@@ -241,7 +241,7 @@ bf16: true
 ## Freeze (Partial-Parameter) SFT
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: sft
@@ -263,7 +263,7 @@ bf16: true
 ## Pre-training (Continual)
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: pt
@@ -346,7 +346,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 FORCE_TORCHRUN=1 \
 ## GaLore Full Fine-Tuning (Memory-Efficient Full Params)
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: sft
@@ -371,7 +371,7 @@ num_train_epochs: 2.0
 ## Custom Dataset with Evaluation
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: sft
@@ -406,7 +406,7 @@ metric_for_best_model: eval_loss
 ## Qwen3 Thinking Model SFT
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: sft

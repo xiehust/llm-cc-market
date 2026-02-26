@@ -14,7 +14,7 @@
 ### Base model
 ```yaml
 # chat_config.yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 template: qwen3_nothink
 trust_remote_code: true
 ```
@@ -25,7 +25,7 @@ trust_remote_code: true
 
 ### With LoRA adapter
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 adapter_name_or_path: saves/qwen3-8b/lora/sft
 template: qwen3_nothink
 finetuning_type: lora
@@ -34,7 +34,7 @@ trust_remote_code: true
 
 ### With vLLM backend
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 template: qwen3_nothink
 infer_backend: vllm
 vllm_maxlen: 4096
@@ -53,7 +53,7 @@ trust_remote_code: true
 ### HuggingFace backend
 ```yaml
 # api_config.yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 template: qwen3_nothink
 infer_backend: huggingface
 trust_remote_code: true
@@ -65,7 +65,7 @@ API_PORT=8000 ~/lmf-env/bin/llamafactory-cli api api_config.yaml
 
 ### vLLM backend (recommended for throughput)
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 template: qwen3_nothink
 infer_backend: vllm
 vllm_maxlen: 8192
@@ -75,7 +75,7 @@ trust_remote_code: true
 
 ### SGLang backend
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 template: qwen3_nothink
 infer_backend: sglang
 sglang_maxlen: 8192
@@ -85,7 +85,7 @@ trust_remote_code: true
 
 ### Deploy with LoRA adapter
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 adapter_name_or_path: saves/qwen3-8b/lora/sft
 template: qwen3_nothink
 finetuning_type: lora
@@ -99,14 +99,14 @@ All backends expose OpenAI-compatible API at `http://localhost:8000/v1`.
 ```bash
 curl http://localhost:8000/v1/chat/completions \
     -H "Content-Type: application/json" \
-    -d '{"model": "Qwen/Qwen3-8B-Instruct", "messages": [{"role": "user", "content": "Hello!"}]}'
+    -d '{"model": "Qwen/Qwen3-4B-Instruct-2507", "messages": [{"role": "user", "content": "Hello!"}]}'
 ```
 
 ```python
 from openai import OpenAI
 client = OpenAI(api_key="0", base_url="http://localhost:8000/v1")
 response = client.chat.completions.create(
-    model="Qwen/Qwen3-8B-Instruct",
+    model="Qwen/Qwen3-4B-Instruct-2507",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 print(response.choices[0].message.content)
@@ -131,7 +131,7 @@ print(response.choices[0].message.content)
 
 ```yaml
 # merge_config.yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 adapter_name_or_path: saves/qwen3-8b/lora/sft
 template: qwen3_nothink
 finetuning_type: lora
@@ -162,7 +162,7 @@ export_hub_model_id: your-username/qwen3-8b-sft
 
 ```yaml
 # gptq_config.yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 template: qwen3_nothink
 trust_remote_code: true
 
@@ -186,7 +186,7 @@ Pre-quantized GPTQ/AWQ models can be used directly for LoRA fine-tuning:
 
 ```yaml
 # No quantization_bit needed -- model is already quantized
-model_name_or_path: TechxGenus/Qwen3-8B-Instruct-GPTQ-Int4
+model_name_or_path: TechxGenus/Qwen3-4B-Instruct-2507-GPTQ-Int4
 finetuning_type: lora
 # ... rest same as LoRA SFT
 ```
@@ -205,7 +205,7 @@ export_dir: saves/qwen3-8b-ollama
 Use `do_predict: true` in the SFT training config:
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 adapter_name_or_path: saves/qwen3-8b/lora/sft
 template: qwen3_nothink
 finetuning_type: lora
@@ -232,7 +232,7 @@ Note: `llamafactory-cli eval` is deprecated. Use vLLM batch inference instead:
 
 ```bash
 python scripts/vllm_infer.py \
-    --model_name_or_path Qwen/Qwen3-8B-Instruct \
+    --model_name_or_path Qwen/Qwen3-4B-Instruct-2507 \
     --template qwen3_nothink \
     --dataset alpaca_en_demo
 ```

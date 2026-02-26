@@ -29,7 +29,7 @@ The last assistant message in `messages` is the chosen response. `rejected_respo
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type dpo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset /path/to/dpo_data.jsonl \
@@ -48,7 +48,7 @@ CUDA_VISIBLE_DEVICES=0 \
 CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type dpo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --deepspeed zero2 \
@@ -80,7 +80,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type kto \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset /path/to/kto_data.jsonl \
@@ -105,7 +105,7 @@ Uses same data format as DPO (chosen + rejected). No reference model needed.
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type cpo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset /path/to/dpo_data.jsonl \
@@ -122,7 +122,7 @@ Uses same data format as DPO. No reference model needed.
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type simpo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset /path/to/dpo_data.jsonl \
@@ -140,7 +140,7 @@ Uses same data format as DPO. No reference model needed.
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type orpo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset /path/to/dpo_data.jsonl \
@@ -159,7 +159,7 @@ Same as DPO (chosen + rejected pairs).
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type rm \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset /path/to/rm_data.jsonl \
@@ -183,7 +183,7 @@ Query-only (model generates completions):
 CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type ppo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --reward_model /path/to/reward_model \

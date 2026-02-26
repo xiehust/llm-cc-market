@@ -12,7 +12,7 @@ GRPO generates multiple completions per prompt, scores them with reward function
 CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type grpo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset /path/to/grpo_data.jsonl \
@@ -47,7 +47,7 @@ Generation and training share GPUs. Model weights are moved between training and
 CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type grpo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --use_vllm true \
     --vllm_mode colocate \
@@ -65,7 +65,7 @@ Terminal 1 — rollout server:
 ```bash
 CUDA_VISIBLE_DEVICES=4,5,6,7 \
 ~/swift-env/bin/swift rollout \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --infer_backend vllm \
     --vllm_tensor_parallel_size 4
@@ -76,7 +76,7 @@ Terminal 2 — GRPO training:
 CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ~/swift-env/bin/swift rlhf \
     --rlhf_type grpo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --use_vllm true \
     --vllm_mode server \
@@ -89,7 +89,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ```bash
 ~/swift-env/bin/swift rlhf \
     --rlhf_type grpo \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_vllm true --vllm_mode server \
     --async_generate true \
     --dataset /path/to/data.jsonl \

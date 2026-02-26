@@ -55,7 +55,7 @@ Shortcut alias: `lmf` (e.g., `lmf train config.yaml`).
 
 Gather from the user:
 - **Task**: SFT / pre-train / DPO / KTO / PPO / reward model / eval / export
-- **Model**: Which model? (e.g., `Qwen/Qwen3-8B-Instruct`)
+- **Model**: Which model? (e.g., `Qwen/Qwen3-4B-Instruct-2507`)
 - **Dataset**: Custom path or registered dataset name
 - **Hardware**: GPU count, memory per GPU
 - **Method**: LoRA / QLoRA / full / freeze / OFT

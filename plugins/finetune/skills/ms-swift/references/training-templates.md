@@ -5,7 +5,7 @@
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset 'yahma/alpaca-cleaned#500' \
@@ -32,7 +32,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --tuner_type lora \
     --dataset 'AI-ModelScope/alpaca-gpt4-data-zh#500' \
               'AI-ModelScope/alpaca-gpt4-data-en#500' \
@@ -59,7 +59,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --quant_method bnb \
@@ -84,7 +84,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type full \
     --dataset 'yahma/alpaca-cleaned#2000' \
@@ -123,7 +123,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset 'yahma/alpaca-cleaned#1000' \
@@ -141,7 +141,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --use_liger_kernel true \
@@ -155,7 +155,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type full \
     --fsdp fsdp2 \
@@ -169,7 +169,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --enable_thinking true \
@@ -190,7 +190,7 @@ CUDA_VISIBLE_DEVICES=0 \
 
 ```bash
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset 'yahma/alpaca-cleaned#500' \
@@ -213,7 +213,7 @@ Prepare data in messages format:
 
 ```bash
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset /path/to/train.jsonl \
@@ -257,7 +257,7 @@ Prepare data in messages format:
 
 ```bash
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --task_type seq_cls \
     --num_labels 3 \
@@ -271,7 +271,7 @@ Prepare data in messages format:
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ~/swift-env/bin/swift sft \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --sequence_parallel_size 4 \
@@ -286,7 +286,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
 ~/swift-env/bin/swift pt \
-    --model Qwen/Qwen3-8B \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --tuner_type lora \
     --dataset /path/to/pretrain_data.jsonl \
@@ -305,7 +305,7 @@ Any command can use a YAML config instead of CLI args:
 
 ```yaml
 # config.yaml
-model: Qwen/Qwen3-8B-Instruct
+model: Qwen/Qwen3-4B-Instruct-2507
 use_hf: true
 tuner_type: lora
 dataset:

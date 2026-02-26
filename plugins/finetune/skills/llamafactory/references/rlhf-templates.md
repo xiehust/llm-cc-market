@@ -33,7 +33,7 @@ Preference data with chosen and rejected responses. Register with `ranking: true
 
 ### Standard DPO Config
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: dpo
@@ -108,7 +108,7 @@ Uses binary feedback (desirable/undesirable) instead of paired preferences.
 
 ### KTO Config
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: kto
@@ -145,7 +145,7 @@ bf16: true
 Train a reward model from preference data. Used as input for PPO.
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: rm
@@ -178,7 +178,7 @@ Query-only (model generates completions during training):
 
 ### PPO Config
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: ppo
@@ -248,7 +248,7 @@ bf16: true
 ## DPO with DeepSpeed (Multi-GPU)
 
 ```yaml
-model_name_or_path: Qwen/Qwen3-8B-Instruct
+model_name_or_path: Qwen/Qwen3-4B-Instruct-2507
 trust_remote_code: true
 
 stage: dpo

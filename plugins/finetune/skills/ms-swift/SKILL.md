@@ -63,7 +63,7 @@ All commands accept `--config path/to/config.yaml` to load parameters from YAML.
 
 Gather from the user:
 - **Task**: SFT / pre-train / RLHF (which algorithm?) / eval / quantize / deploy
-- **Model**: Which model? (e.g., `Qwen/Qwen3-8B-Instruct`)
+- **Model**: Which model? (e.g., `Qwen/Qwen3-4B-Instruct-2507`)
 - **Dataset**: Custom path or hub dataset ID
 - **Hardware**: GPU count, memory per GPU
 - **Hub**: HuggingFace (`--use_hf`) or ModelScope (default)

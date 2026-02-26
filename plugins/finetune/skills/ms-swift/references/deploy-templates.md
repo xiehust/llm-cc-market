@@ -14,7 +14,7 @@
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift infer \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --infer_backend vllm \
     --max_new_tokens 2048 \
@@ -54,7 +54,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift deploy \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --infer_backend vllm \
     --port 8000 \
@@ -66,7 +66,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift deploy \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --infer_backend sglang \
     --port 8000
@@ -76,7 +76,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift deploy \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --infer_backend lmdeploy \
     --port 8000
@@ -105,7 +105,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ### Deploy with Custom Model Name
 ```bash
 ~/swift-env/bin/swift deploy \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --infer_backend vllm \
     --served_model_name my-model \
@@ -138,7 +138,7 @@ print(response.choices[0].message.content)
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift export \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --quant_method awq \
     --quant_bits 4 \
@@ -150,7 +150,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift export \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --quant_method gptq \
     --quant_bits 4 \
@@ -162,7 +162,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift export \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --quant_method bnb \
     --quant_bits 4 \
@@ -173,7 +173,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift export \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --quant_method fp8 \
     --output_dir output/qwen3-8b-fp8
@@ -188,7 +188,7 @@ CUDA_VISIBLE_DEVICES=0 \
 
 ```bash
 ~/swift-env/bin/swift merge-lora \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --adapters output/v0-xxx/checkpoint-xxx \
     --output_dir output/merged
@@ -198,7 +198,7 @@ CUDA_VISIBLE_DEVICES=0 \
 
 ```bash
 ~/swift-env/bin/swift export \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --to_ollama true \
     --output_dir output/ollama
@@ -222,7 +222,7 @@ Add `--use_hf` to push to HuggingFace instead of ModelScope.
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift eval \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --eval_dataset mmlu gsm8k arc \
     --infer_backend vllm
@@ -240,7 +240,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ### Evaluate with Sample Limit
 ```bash
 ~/swift-env/bin/swift eval \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --eval_dataset mmlu \
     --eval_limit 100 \
@@ -273,7 +273,7 @@ CUDA_VISIBLE_DEVICES=0 \
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
 ~/swift-env/bin/swift sample \
-    --model Qwen/Qwen3-8B-Instruct \
+    --model Qwen/Qwen3-4B-Instruct-2507 \
     --use_hf \
     --dataset /path/to/prompts.jsonl \
     --num_return_sequences 16 \
@@ -297,7 +297,7 @@ OPENAI_API_KEY=sk-xxx \
 ## Gradio Web Interface
 
 ```bash
-~/swift-env/bin/swift app --model Qwen/Qwen3-8B-Instruct --use_hf
+~/swift-env/bin/swift app --model Qwen/Qwen3-4B-Instruct-2507 --use_hf
 ```
 
 ## Full Web UI (Training + Inference + Eval)
