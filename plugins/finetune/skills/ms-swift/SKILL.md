@@ -191,9 +191,11 @@ Extend ms-swift with custom reward functions, loss functions, metrics, and more 
 
 ## Notes
 
+- **Qwen3.5 / Qwen-VL models** require `qwen_vl_utils`: `uv pip install qwen_vl_utils --python ~/swift-env/bin/python`. Qwen3.5 is multimodal even for text tasks.
 - For v4.x (dev), `--train_type` is renamed to `--tuner_type` (backward compatible in 3.x)
 - For Qwen3 thinking models, use `--enable_thinking true/false` to control reasoning
 - Multi-GPU: set `NPROC_PER_NODE=N` instead of manual torchrun
+- DeepSpeed requires `CUDA_HOME` to be set (e.g., `export CUDA_HOME=/usr/local/cuda`)
 - Output versioned automatically: `output/v0-<timestamp>/`
 - Monitor GPU: `watch -n1 nvidia-smi`
 - Avoid QLoRA for production (cannot merge weights); use LoRA, merge, then quantize with AWQ/GPTQ

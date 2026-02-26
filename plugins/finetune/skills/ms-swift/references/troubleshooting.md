@@ -129,6 +129,19 @@ export CUDA_HOME=/usr/local/cuda
 ```
 Or add to `~/.bashrc` for persistence. The setup script auto-detects this, but if it fails, set it manually. Verify with: `echo $CUDA_HOME && ls $CUDA_HOME/bin/nvcc`
 
+## Multimodal / VL Model Issues
+
+### "Missing qwen_vl_utils" for Qwen3.5 / Qwen-VL Models
+**Problem**: `ModuleNotFoundError: No module named 'qwen_vl_utils'` when using Qwen3.5 or Qwen3-VL models. Qwen3.5 is a multimodal MoE model that requires vision utilities even for text-only tasks.
+**Solution**: Install the qwen_vl_utils package:
+```bash
+uv pip install qwen_vl_utils --python ~/swift-env/bin/python
+```
+For video support, also install:
+```bash
+uv pip install qwen_vl_utils[video] --python ~/swift-env/bin/python
+```
+
 ## Setup Issues
 
 ### ms-swift Installation Conflicts
