@@ -86,7 +86,7 @@ river-cc-market/
 
 Once installed, use natural language in Claude Code to fine-tune and deploy models:
 
-- **Train:** "Fine-tune Qwen3-8B on my dataset using LoRA"
+- **Train:** "Fine-tune Qwen3-4B-Instruct-2507 on my dataset using LoRA"
 - **RLHF:** "Run GRPO training on my math dataset with accuracy rewards"
 - **Deploy:** "Deploy my fine-tuned model as an OpenAI-compatible API with vLLM"
 - **Evaluate:** "Run MMLU and GSM8K benchmarks on my model"
