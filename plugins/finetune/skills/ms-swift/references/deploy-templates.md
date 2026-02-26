@@ -436,6 +436,20 @@ OPENAI_API_KEY=sk-xxx \
 ~/swift-env/bin/swift app --model Qwen/Qwen3-4B-Instruct-2507 --use_hf
 ```
 
+## Performance Benchmark
+
+Use `scripts/bench.py` to benchmark a deployed model's latency and throughput:
+
+```bash
+~/swift-env/bin/python scripts/bench.py
+```
+
+Tests against `http://localhost:8000/v1` (any OpenAI-compatible endpoint). Measures:
+- **Latency**: TTFT (time to first token), total response time (5 sequential requests, streaming)
+- **Throughput**: tokens/s under concurrency (10 concurrent requests)
+
+Edit the `model` parameter in the script to match the deployed model name.
+
 ## Full Web UI (Training + Inference + Eval)
 
 ```bash
