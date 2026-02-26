@@ -112,7 +112,7 @@ The skill handles environment setup, command generation, hardware sizing, and da
 
 ### ms-swift
 
-**ms-swift**（ModelScope SWIFT）是阿里巴巴 ModelScope 团队开源的大模型微调与部署框架，发表于 AAAI 2025。该 skill 封装了 ms-swift 的完整工作流，支持通过自然语言指令完成模型训练、对齐、评估、量化和部署。
+**ms-swift**（ModelScope SWIFT）是ModelScope 团队开源的大模型微调与部署框架，该 skill 封装了 ms-swift 的完整工作流，支持通过自然语言指令完成模型训练、对齐、评估、量化和部署。
 
 - 支持 600+ 文本大模型和 300+ 多模态模型（Qwen3、Llama4、DeepSeek-R1/V3、GLM4/5 等）
 - 最全面的 RLHF/RL 算法支持：GRPO 及变体（DAPO、SAPO、CISPO、CHORD）、DPO、KTO、PPO、GKD 等
