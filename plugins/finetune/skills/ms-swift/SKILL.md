@@ -66,24 +66,26 @@ All commands accept `--config path/to/config.yaml` to load parameters from YAML.
 
 Before any training task, determine the execution environment.
 
-**Ask the user**: "Is the target environment **local** (this machine) or **remote EC2**?"
+Use `AskUserQuestion` to ask: "Where will training run?" with options:
+- **Local** — "Run on this machine"
+- **Remote EC2** — "Run on remote EC2 instance(s) via SSH"
 
 #### If Local
 Proceed directly to Step 1. All commands run on this machine.
 
 #### If Remote EC2
 
-1. **Collect connection info**: Ask for the EC2 instance **IP address** and **PEM key file path**.
+1. **Collect connection info**: Use `AskUserQuestion` to ask for the EC2 instance **IP address** and **PEM key file path** (e.g., "What is the EC2 instance IP address and PEM key file path?"). Allow the user to provide both in a single response.
 2. **Validate connectivity**:
    ```bash
    chmod 400 /path/to/key.pem
    ssh -i /path/to/key.pem -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@IP "echo 'Connection OK' && nvidia-smi --query-gpu=name,memory.total --format=csv,noheader"
    ```
-   Report GPU info to user. If fails, ask user to verify IP, PEM path, and security group (port 22).
+   Report GPU info to user. If fails, use `AskUserQuestion` to ask the user to verify IP, PEM path, and security group (port 22).
 
-3. **Ask: "Do you want to add more machines?"** Repeat collection + validation for each. Loop until user says no.
+3. Use `AskUserQuestion` to ask: "Do you want to add more machines?" with options **Yes** / **No**. If yes, repeat collection + validation for each additional machine. Loop until user says no.
 
-4. **If multiple machines**: Ask "You have N machines. Do you want to run **distributed training** across all of them?" If yes, designate the first machine as master node (`NODE_RANK=0`).
+4. **If multiple machines**: Use `AskUserQuestion` to ask: "You have N machines. Do you want to run distributed training across all of them?" with options **Yes (distributed)** / **No (use first machine only)**. If yes, designate the first machine as master node (`NODE_RANK=0`).
 
 5. **Record execution context** for all subsequent steps:
    - **Single remote**: Wrap all commands with `ssh -i PEM ubuntu@IP "COMMAND"`
@@ -319,6 +321,93 @@ By default ms-swift downloads from **ModelScope**. Add `--use_hf` for **HuggingF
 ## Plugin System
 
 Extend ms-swift with custom reward functions, loss functions, metrics, and more via `--external_plugins path/to/plugin.py`. See GRPO guide for custom reward function examples.
+
+## Troubleshooting Index
+
+Quick reference for all known issues in **`references/troubleshooting.md`**:
+
+### Training Issues
+| Problem | Section |
+|---------|---------|
+| NaN or 0 loss on V100 | Training Issues |
+| NCCL shared memory error (Docker) | Training Issues |
+| "Expected to mark a variable ready only once" | Training Issues |
+| DDP unused parameters error | Training Issues |
+| Slow tokenization on large datasets | Training Issues |
+| Streaming requires max_steps | Training Issues |
+| device_map + DeepSpeed conflict | Training Issues |
+| GPTQ models cannot full fine-tune | Training Issues |
+| Checkpoint larger than original model | Training Issues |
+| Training speed drops in multi-machine setup | Training Issues |
+| LongLoRA compatibility (Llama only) | Training Issues |
+
+### GRPO Issues
+| Problem | Section |
+|---------|---------|
+| GRPO loss=0, grad_norm=0 | GRPO Issues |
+| GRPO colocate OOM | GRPO Issues |
+| GRPO colocate + async_generate not supported | GRPO Issues |
+
+### Inference Issues
+| Problem | Section |
+|---------|---------|
+| Transformers vs vLLM output differences | Inference Issues |
+| Max length error during inference | Inference Issues |
+| CPU inference setup | Inference Issues |
+
+### Memory Issues
+| Problem | Section |
+|---------|---------|
+| VLM (Vision-Language Model) OOM | Memory Issues |
+| General OOM during training | Memory Issues |
+| QLoRA cannot merge weights | Memory Issues |
+
+### Evaluation Issues
+| Problem | Section |
+|---------|---------|
+| Evaluation stops at fixed percentage | Evaluation Issues |
+| NLTK download failure | Evaluation Issues |
+
+### DeepSpeed Issues
+| Problem | Section |
+|---------|---------|
+| "DeepSpeed needs CUDA_HOME set" / nvcc not found | DeepSpeed Issues |
+
+### Performance / Fast Path Issues
+| Problem | Section |
+|---------|---------|
+| "The fast path is not available" (missing flash-linear-attention) | Performance Issues |
+
+### Multimodal / VL Model Issues
+| Problem | Section |
+|---------|---------|
+| Missing qwen_vl_utils / torchvision for Qwen3.5 | Multimodal Issues |
+| **Qwen3.5 text-only crash: mm_token_type_ids NoneType** (ms-swift 4.0.0.dev0) | Multimodal Issues |
+
+### Setup Issues
+| Problem | Section |
+|---------|---------|
+| ms-swift installation conflicts | Setup Issues |
+| flash-attn installation fails | Setup Issues |
+| vLLM installation issues | Setup Issues |
+
+### Megatron Issues
+| Problem | Section |
+|---------|---------|
+| Megatron attention backend error (no dot product backend) | Megatron Issues |
+| transformer_engine install fails (missing cudnn.h / nccl.h) | Megatron Issues |
+| Missing apex | Megatron Issues |
+| Megatron multi-node data inconsistency | Megatron Issues |
+
+### SSH / Remote Execution Issues
+| Problem | Section |
+|---------|---------|
+| SSH connection refused | SSH Issues |
+| SSH permission denied | SSH Issues |
+| Training killed on SSH disconnect | SSH Issues |
+| Multi-node NCCL timeout | SSH Issues |
+| Cannot find training process on remote | SSH Issues |
+| SCP transfer fails | SSH Issues |
 
 ## Notes
 

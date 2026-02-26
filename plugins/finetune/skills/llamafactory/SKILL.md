@@ -55,24 +55,26 @@ Shortcut alias: `lmf` (e.g., `lmf train config.yaml`).
 
 Before any training task, determine the execution environment.
 
-**Ask the user**: "Is the target environment **local** (this machine) or **remote EC2**?"
+Use `AskUserQuestion` to ask: "Where will training run?" with options:
+- **Local** — "Run on this machine"
+- **Remote EC2** — "Run on remote EC2 instance(s) via SSH"
 
 #### If Local
 Proceed directly to Step 1. All commands run on this machine.
 
 #### If Remote EC2
 
-1. **Collect connection info**: Ask for the EC2 instance **IP address** and **PEM key file path**.
+1. **Collect connection info**: Use `AskUserQuestion` to ask for the EC2 instance **IP address** and **PEM key file path** (e.g., "What is the EC2 instance IP address and PEM key file path?"). Allow the user to provide both in a single response.
 2. **Validate connectivity**:
    ```bash
    chmod 400 /path/to/key.pem
    ssh -i /path/to/key.pem -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@IP "echo 'Connection OK' && nvidia-smi --query-gpu=name,memory.total --format=csv,noheader"
    ```
-   Report GPU info to user. If fails, ask user to verify IP, PEM path, and security group (port 22).
+   Report GPU info to user. If fails, use `AskUserQuestion` to ask the user to verify IP, PEM path, and security group (port 22).
 
-3. **Ask: "Do you want to add more machines?"** Repeat collection + validation for each. Loop until user says no.
+3. Use `AskUserQuestion` to ask: "Do you want to add more machines?" with options **Yes** / **No**. If yes, repeat collection + validation for each additional machine. Loop until user says no.
 
-4. **If multiple machines**: Ask "You have N machines. Do you want to run **distributed training** across all of them?" If yes, designate the first machine as master node (`NODE_RANK=0`).
+4. **If multiple machines**: Use `AskUserQuestion` to ask: "You have N machines. Do you want to run distributed training across all of them?" with options **Yes (distributed)** / **No (use first machine only)**. If yes, designate the first machine as master node (`NODE_RANK=0`).
 
 5. **Record execution context** for all subsequent steps:
    - **Single remote**: Wrap all commands with `ssh -i PEM ubuntu@IP "COMMAND"`

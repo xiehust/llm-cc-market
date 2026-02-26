@@ -165,6 +165,43 @@ For video support, also install:
 uv pip install qwen_vl_utils[video] --python ~/swift-env/bin/python
 ```
 
+### Qwen3.5 Text-Only Training Crash: "TypeError: 'NoneType' object is not subscriptable" (ms-swift 4.0.0.dev0)
+**Problem**: Training Qwen3.5 models (e.g., `Qwen/Qwen3.5-35B-A3B`) on text-only datasets crashes in the DataLoader with:
+```
+File "swift/template/templates/qwen.py", line 450, in _get_position_ids
+  position_ids, _ = get_rope_index(
+File "transformers/models/qwen3_5_moe/modeling_qwen3_5_moe.py", line 1673, in get_rope_index
+  input_token_type = mm_token_type_ids[batch_idx]
+TypeError: 'NoneType' object is not subscriptable
+```
+**Root Cause**: The Qwen3.5 `get_rope_index` in transformers added `mm_token_type_ids` as the 2nd positional parameter: `get_rope_index(self, input_ids, mm_token_type_ids, image_grid_thw=None, ...)`. But ms-swift 4.0.0.dev0's Qwen template passes `image_grid_thw` in that position instead, and never passes `mm_token_type_ids`. For text-only data, `mm_token_type_ids` is `None`, causing the crash.
+**Solution**: Patch `swift/template/templates/qwen.py` `_get_position_ids` to detect and pass `mm_token_type_ids`:
+```python
+# In _get_position_ids, replace the get_rope_index call with:
+import inspect
+sig_params = list(inspect.signature(get_rope_index).parameters.keys())
+if 'mm_token_type_ids' in sig_params:
+    import torch as _torch
+    mm_token_type_ids = inputs.get('mm_token_type_ids')
+    if mm_token_type_ids is None:
+        mm_token_type_ids = _torch.zeros_like(inputs['input_ids'], dtype=_torch.int)
+    position_ids, _ = get_rope_index(
+        inputs['input_ids'],
+        mm_token_type_ids,
+        inputs.get('image_grid_thw'),
+        inputs.get('video_grid_thw'),
+        attention_mask=attention_mask,
+        **kwargs)
+else:
+    position_ids, _ = get_rope_index(
+        inputs['input_ids'],
+        inputs.get('image_grid_thw'),
+        inputs.get('video_grid_thw'),
+        attention_mask=attention_mask,
+        **kwargs)
+```
+**Affected versions**: ms-swift 4.0.0.dev0 + transformers 5.3.0.dev0 with Qwen3.5 models. May be fixed in future releases.
+
 ## Setup Issues
 
 ### ms-swift Installation Conflicts
