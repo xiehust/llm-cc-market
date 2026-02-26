@@ -51,7 +51,91 @@ Shortcut alias: `lmf` (e.g., `lmf train config.yaml`).
 
 ## Workflow
 
+### 0. Environment Selection
+
+Before any training task, determine the execution environment.
+
+**Ask the user**: "Is the target environment **local** (this machine) or **remote EC2**?"
+
+#### If Local
+Proceed directly to Step 1. All commands run on this machine.
+
+#### If Remote EC2
+
+1. **Collect connection info**: Ask for the EC2 instance **IP address** and **PEM key file path**.
+2. **Validate connectivity**:
+   ```bash
+   chmod 400 /path/to/key.pem
+   ssh -i /path/to/key.pem -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@IP "echo 'Connection OK' && nvidia-smi --query-gpu=name,memory.total --format=csv,noheader"
+   ```
+   Report GPU info to user. If fails, ask user to verify IP, PEM path, and security group (port 22).
+
+3. **Ask: "Do you want to add more machines?"** Repeat collection + validation for each. Loop until user says no.
+
+4. **If multiple machines**: Ask "You have N machines. Do you want to run **distributed training** across all of them?" If yes, designate the first machine as master node (`NODE_RANK=0`).
+
+5. **Record execution context** for all subsequent steps:
+   - **Single remote**: Wrap all commands with `ssh -i PEM ubuntu@IP "COMMAND"`
+   - **Multi-machine distributed**: Run on all nodes via SSH with different `NODE_RANK`
+
+#### SSH Command Patterns
+
+```bash
+# Run a command on remote machine
+ssh -i PEM ubuntu@IP "COMMAND"
+
+# Long-running training -- use nohup to survive SSH disconnect
+ssh -i PEM ubuntu@IP "nohup bash -c 'COMMAND' > ~/train.log 2>&1 &"
+
+# Check training progress
+ssh -i PEM ubuntu@IP "tail -50 ~/train.log"
+
+# Monitor GPU
+ssh -i PEM ubuntu@IP "nvidia-smi"
+
+# Upload files (dataset, scripts, YAML config)
+scp -i PEM local_file ubuntu@IP:~/remote_path
+scp -i PEM -r local_dir ubuntu@IP:~/remote_dir
+
+# Download results
+scp -i PEM -r ubuntu@IP:~/output ./local_output
+```
+
+#### Remote Environment Setup
+
+If the framework is not installed on the remote machine:
+```bash
+scp -i PEM scripts/setup.sh ubuntu@IP:~/setup.sh
+ssh -i PEM ubuntu@IP "bash ~/setup.sh"
+```
+
+#### Distributed Training (Multi-Node)
+
+When distributed training across N machines:
+
+1. **Run setup on ALL nodes** (upload and execute setup.sh on each)
+2. **Upload dataset and YAML config to ALL nodes** (or use shared storage EFS/S3):
+   ```bash
+   scp -i PEM /path/to/dataset.jsonl ubuntu@IP:~/dataset.jsonl
+   scp -i PEM config.yaml ubuntu@IP:~/config.yaml
+   ```
+3. **Launch training on each node** with different NODE_RANK:
+   ```bash
+   # Master node (machine 1):
+   ssh -i PEM1 ubuntu@MASTER_IP "nohup bash -c 'FORCE_TORCHRUN=1 NNODES=N NODE_RANK=0 MASTER_ADDR=MASTER_IP MASTER_PORT=29500 ~/lmf-env/bin/llamafactory-cli train ~/config.yaml' > ~/train.log 2>&1 &"
+
+   # Worker node K:
+   ssh -i PEMK ubuntu@WORKERK_IP "nohup bash -c 'FORCE_TORCHRUN=1 NNODES=N NODE_RANK=K MASTER_ADDR=MASTER_IP MASTER_PORT=29500 ~/lmf-env/bin/llamafactory-cli train ~/config.yaml' > ~/train.log 2>&1 &"
+   ```
+4. **Monitor all nodes**: Check `tail ~/train.log` and `nvidia-smi` on each via SSH
+5. **Important**: All nodes need identical environments, security groups must allow TCP 29500-29600 between nodes, start master first then workers, checkpoints saved on master node (NODE_RANK=0)
+
 ### 1. Determine Task Type
+
+> **Remote mode**: If remote execution is active (from Step 0), detect hardware from the remote machine:
+> ```bash
+> ssh -i PEM ubuntu@IP "nvidia-smi --query-gpu=name,memory.total,count --format=csv,noheader"
+> ```
 
 Gather from the user:
 - **Task**: SFT / pre-train / DPO / KTO / PPO / reward model / eval / export
@@ -70,6 +154,12 @@ LLaMA-Factory is entirely YAML-driven. Consult the templates in `references/`:
 - **`references/troubleshooting.md`** -- Common issues and solutions
 
 ### 3. Execute
+
+> **Remote mode**: If remote execution is active, upload the YAML config file first, then wrap training commands with SSH using nohup (see Step 0 patterns). For single remote, run directly. For distributed, launch on each node with appropriate `NODE_RANK` and `FORCE_TORCHRUN=1`.
+> ```bash
+> scp -i PEM config.yaml ubuntu@IP:~/config.yaml
+> ssh -i PEM ubuntu@IP "nohup bash -c 'CUDA_VISIBLE_DEVICES=0 ~/lmf-env/bin/llamafactory-cli train ~/config.yaml' > ~/train.log 2>&1 &"
+> ```
 
 ```bash
 # Single GPU
@@ -96,6 +186,11 @@ FORCE_TORCHRUN=1 NNODES=2 NODE_RANK=0 MASTER_ADDR=192.168.0.1 MASTER_PORT=29500 
 - **Quantize**: `llamafactory-cli export quant_config.yaml` (GPTQ)
 - **Deploy**: `API_PORT=8000 llamafactory-cli api config.yaml`
 - **WebUI**: `llamafactory-cli webui`
+
+> **Remote mode**: If remote execution is active, run post-training commands via SSH. Download results to local machine:
+> ```bash
+> scp -i PEM -r ubuntu@IP:~/output ./local_output
+> ```
 
 ## Key YAML Parameters
 

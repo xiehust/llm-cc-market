@@ -198,3 +198,56 @@ trl>=0.18.0,<=0.24.0
 ## Security Note
 
 Versions <= v0.9.3 had a remote code execution vulnerability (CVE-2025-53002). Update to v0.9.4+.
+
+## SSH / Remote Execution Issues
+
+### SSH Connection Refused
+**Problem**: `ssh: connect to host X port 22: Connection refused` when connecting to EC2 instance.
+**Solution**: Verify the EC2 security group allows inbound TCP port 22 from your IP. Check that the instance is running and the IP address is correct (use the public IP, not private).
+
+### SSH Permission Denied
+**Problem**: `Permission denied (publickey)` when connecting via SSH.
+**Solution**:
+1. Ensure the PEM file has correct permissions: `chmod 400 /path/to/key.pem`
+2. Verify the correct username (`ubuntu` for Ubuntu AMIs, `ec2-user` for Amazon Linux)
+3. Confirm the PEM key matches the key pair assigned to the instance
+
+### Training Killed on SSH Disconnect
+**Problem**: Training process dies when the SSH session disconnects or times out.
+**Solution**: Always use `nohup` for long-running training:
+```bash
+ssh -i PEM ubuntu@IP "nohup bash -c 'COMMAND' > ~/train.log 2>&1 &"
+```
+Check if training is still running:
+```bash
+ssh -i PEM ubuntu@IP "ps aux | grep llamafactory"
+```
+
+### Multi-Node NCCL Timeout
+**Problem**: `NCCL error: Timed out` or `NCCL WARN Connect to ... failed` during distributed training.
+**Solution**:
+1. Ensure security groups allow TCP ports 29500-29600 between all nodes (use the same security group for all instances)
+2. Verify `MASTER_ADDR` uses the **private IP** of the master node (not public IP)
+3. Add NCCL debugging: `NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=ALL`
+4. Start master node (`NODE_RANK=0`) before worker nodes
+
+### Cannot Find Training Process on Remote
+**Problem**: Unsure if training is running on the remote machine.
+**Solution**: Check process status and logs:
+```bash
+# Check if training is running
+ssh -i PEM ubuntu@IP "ps aux | grep llamafactory"
+
+# Check GPU utilization
+ssh -i PEM ubuntu@IP "nvidia-smi"
+
+# View recent training output
+ssh -i PEM ubuntu@IP "tail -50 ~/train.log"
+```
+
+### SCP Transfer Fails
+**Problem**: `scp` file transfer to/from EC2 fails or hangs.
+**Solution**:
+1. Verify SSH works first: `ssh -i PEM ubuntu@IP "echo OK"`
+2. For large files, check disk space on remote: `ssh -i PEM ubuntu@IP "df -h"`
+3. For slow transfers, consider compressing first: `tar czf data.tar.gz data/ && scp -i PEM data.tar.gz ubuntu@IP:~/`
