@@ -101,7 +101,7 @@ Once installed, use natural language in Claude Code to fine-tune and deploy mode
 
 - **Train (ms-swift):** "Fine-tune Qwen3.5-35B-A3B on dataset yahma/alpaca-cleaned#1000 using LoRA with ms-swift"
 - **Train (LLaMA-Factory):** "Fine-tune Qwen3-4B-Instruct-2507 on dataset yahma/alpaca-cleaned#1000 with llamafactory using QLoRA"
-- **Megatron:** "Train Qwen3-30B-A3B MoE model with Megatron using 8 GPUs"
+- **Megatron:** "Train Qwen3-30B-A3B MoE model on dataset yahma/alpaca-cleaned#1000 with Megatron"
 - **RLHF:** "Run GRPO training on my math dataset with accuracy rewards"
 - **DPO:** "Run DPO alignment on my preference data with llamafactory"
 - **Deploy:** "Deploy my fine-tuned model as an OpenAI-compatible API with vLLM"
