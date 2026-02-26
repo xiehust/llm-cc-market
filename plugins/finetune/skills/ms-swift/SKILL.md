@@ -1,6 +1,6 @@
 ---
 name: ms-swift
-description: "This skill should be used when the user asks to fine-tune, train, or adapt large language models or multimodal models using ms-swift or ModelScope SWIFT. Triggers include: 'fine-tune a model', 'LoRA training', 'QLoRA', 'GRPO training', 'RLHF', 'DPO training', 'deploy model with vLLM', 'quantize model', 'evaluate model', 'train embedding model', 'agent training', 'multimodal fine-tuning', 'swift sft', 'swift rlhf', 'swift deploy'. Supports 600+ LLMs and 300+ multimodal models including Qwen3, Llama4, DeepSeek-R1/V3, InternLM3, GLM4/5, Gemma3, Phi-4, and vision models like Qwen3-VL, InternVL3, Qwen3-Omni."
+description: "This skill should be used when the user asks to fine-tune, train, or adapt large language models or multimodal models using ms-swift or ModelScope SWIFT. Triggers include: 'fine-tune a model', 'LoRA training', 'QLoRA', 'GRPO training', 'RLHF', 'DPO training', 'deploy model with vLLM', 'quantize model', 'evaluate model', 'train embedding model', 'agent training', 'multimodal fine-tuning', 'swift sft', 'swift rlhf', 'swift deploy', 'Megatron training', 'megatron sft', 'MoE training', 'tensor parallel', 'pipeline parallel'. Supports 600+ LLMs and 300+ multimodal models including Qwen3, Llama4, DeepSeek-R1/V3, InternLM3, GLM4/5, Gemma3, Phi-4, and vision models like Qwen3-VL, InternVL3, Qwen3-Omni. Native Megatron integration for 10x MoE training speedup."
 ---
 
 # ms-swift: LLM Fine-Tuning & Deployment
@@ -33,7 +33,10 @@ Invoke swift via full path (do NOT rely on PATH): `~/swift-env/bin/swift sft ...
 | `swift app` | Gradio inference interface |
 | `swift web-ui` | Full Web UI (train, infer, eval, quantize) |
 | `swift rollout` | vLLM rollout server for GRPO |
-| `megatron sft/pt/rlhf` | Megatron-parallel training (10x MoE speedup) |
+| `megatron sft` | Megatron-parallel SFT (10x MoE speedup) |
+| `megatron pt` | Megatron-parallel pre-training |
+| `megatron rlhf` | Megatron-parallel RLHF (GRPO/DPO/KTO/GKD) |
+| `megatron export` | HF<->Megatron weight conversion |
 
 All commands accept `--config path/to/config.yaml` to load parameters from YAML.
 
@@ -76,6 +79,7 @@ Consult the templates in `references/` for common configurations:
 - **`references/rlhf-templates.md`** -- DPO, KTO, PPO, GKD, CPO, SimPO, reward model
 - **`references/deploy-templates.md`** -- Inference, deployment, quantization, evaluation, sampling
 - **`references/dataset-formats.md`** -- All dataset formats by task type
+- **`references/megatron-guide.md`** -- Megatron-parallel training (MoE 10x speedup, TP/PP/EP/SP/CP)
 - **`references/troubleshooting.md`** -- Common issues and solutions
 
 ### 3. Execute
@@ -98,6 +102,36 @@ Monitor with `tail -f train.log` or `nvidia-smi`.
 - **Evaluate**: `~/swift-env/bin/swift eval --model output/checkpoint-xxx --eval_dataset mmlu gsm8k --infer_backend vllm`
 - **Quantize**: `~/swift-env/bin/swift export --model output/merged --quant_method awq --quant_bits 4 --dataset Y`
 - **Deploy**: `~/swift-env/bin/swift deploy --model output/merged --infer_backend vllm --port 8000`
+
+## Megatron Training
+
+Megatron-SWIFT integrates NVIDIA Megatron-LM parallel technologies for high-performance training. **Use `megatron` instead of `swift` as the command prefix.** Recommended for MoE models (10x speedup) and large-scale multi-GPU training.
+
+### When to Use Megatron
+
+| Scenario | Use | Reason |
+|----------|-----|--------|
+| MoE models (Qwen3-30B-A3B, etc.) | `megatron sft` | 10x faster than DeepSpeed ZeRO3 |
+| Dense full-param on 8+ GPUs | `megatron sft` | Lower memory, ~12% faster |
+| LoRA on 1-2 GPUs | `swift sft` | Simpler, no extra deps |
+| QLoRA | `swift sft` | Megatron doesn't support QLoRA |
+
+### Megatron Quick Reference
+
+| Task | Command |
+|------|---------|
+| Megatron SFT (Mcore-Bridge) | `megatron sft --model X --save_safetensors true --tensor_model_parallel_size N --dataset Y` |
+| Megatron LoRA | `megatron sft --model X --tuner_type lora --save_safetensors true --merge_lora false --dataset Y` |
+| Megatron MoE SFT | `megatron sft --model X --expert_model_parallel_size N --moe_grouped_gemm true --dataset Y` |
+| Megatron GRPO | `megatron rlhf --rlhf_type grpo --model X --reward_funcs accuracy format --dataset Y` |
+| Megatron DPO | `megatron rlhf --rlhf_type dpo --model X --dataset Y` |
+| Megatron Pre-train | `megatron pt --model X --dataset Y` |
+| HF to Megatron | `swift export --model X --to_mcore true --output_dir X-mcore` |
+| Megatron to HF | `swift export --mcore_model X-mcore --to_hf true --output_dir X-hf` |
+
+**Environment**: Requires extra deps (transformer_engine, megatron-core, apex). See **`references/megatron-guide.md`** for setup and full templates.
+
+**Important**: Megatron uses `--micro_batch_size` and `--global_batch_size` instead of `--per_device_train_batch_size` and `--gradient_accumulation_steps`. Set `PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'` for memory efficiency.
 
 ## Key Parameters
 
@@ -164,7 +198,10 @@ Monitor with `tail -f train.log` or `nvidia-smi`.
 | 14B | Full | 120GB+ | 4x A100-40G + DeepSpeed ZeRO2 |
 | 72B | LoRA | 80GB+ | 4x A100-80G + DeepSpeed ZeRO3 |
 | 72B | GRPO | 4x 80GB | 4x A100-80G (hybrid mode) |
-| MoE (30B-A3B) | Full | 60GB+ | 8x A800 + Megatron-SWIFT |
+| MoE (30B-A3B) | Full (Megatron) | 8x 60GB | 8x A800 + Megatron-SWIFT |
+| MoE (30B-A3B) | LoRA (Megatron) | 2x 50GB | 2x A100/A800 + Megatron-SWIFT |
+| MoE (30B-A3B) | Full (ZeRO3) | 16x 80GB | 16x A800 (10x slower than Megatron) |
+| Dense 14B | Full (Megatron) | 8x 64GB | 8x A800 + Megatron-SWIFT |
 
 ## Dataset Format
 
