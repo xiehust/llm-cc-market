@@ -1,0 +1,13 @@
+{
+  "name": "river-market",
+  "owner": {
+    "name": "River"
+  },
+  "plugins": [
+    {
+      "name": "finetune",
+      "source": "./plugins/finetune",
+      "description": "Model finetune using ms-swift/llamafactory/etc"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "name": "finetune",
+  "description": "Model finetune skills using ms-swift/llamafactory/etc",
+  "version": "0.0.1"
+}
