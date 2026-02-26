@@ -36,6 +36,14 @@ Common issues and solutions when using LLaMA-Factory.
 
 ## DeepSpeed Issues
 
+### "DeepSpeed needs CUDA_HOME set"
+**Problem**: DeepSpeed cannot find the CUDA toolkit.
+**Solution**: Set `CUDA_HOME` before running training:
+```bash
+export CUDA_HOME=/usr/local/cuda
+```
+Or add to `~/.bashrc` for persistence. The setup script auto-detects this, but if it fails, set it manually. Verify with: `echo $CUDA_HOME && ls $CUDA_HOME/bin/nvcc`
+
 ### "Please use FORCE_TORCHRUN=1"
 **Problem**: DeepSpeed requires torchrun launcher.
 **Solution**: Set `FORCE_TORCHRUN=1` environment variable:

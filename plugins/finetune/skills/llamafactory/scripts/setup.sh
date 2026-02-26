@@ -4,6 +4,22 @@ set -e
 
 VENV_DIR="${VENV_DIR:-$HOME/lmf-env}"
 
+# Auto-detect CUDA_HOME if not set (required by DeepSpeed)
+if [ -z "$CUDA_HOME" ]; then
+    if [ -d "/usr/local/cuda" ]; then
+        export CUDA_HOME="/usr/local/cuda"
+    elif command -v nvcc &> /dev/null; then
+        export CUDA_HOME="$(dirname "$(dirname "$(which nvcc)")")"
+    fi
+    if [ -n "$CUDA_HOME" ]; then
+        echo "Auto-detected CUDA_HOME=$CUDA_HOME"
+    else
+        echo "WARNING: CUDA_HOME not set and could not be auto-detected."
+        echo "DeepSpeed will not work without it. Set it manually:"
+        echo "  export CUDA_HOME=/usr/local/cuda"
+    fi
+fi
+
 echo "Installing uv (if not present)..."
 if ! command -v uv &> /dev/null; then
     curl -LsSf https://astral.sh/uv/install.sh | sh

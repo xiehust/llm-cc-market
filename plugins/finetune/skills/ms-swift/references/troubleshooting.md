@@ -119,6 +119,16 @@ Common issues and solutions when using ms-swift.
 **Problem**: `nltk.download('punkt_tab')` fails in restricted network environments.
 **Solution**: Known issue. Manually download the punkt_tab package and place in nltk_data directory.
 
+## DeepSpeed Issues
+
+### "DeepSpeed needs CUDA_HOME set"
+**Problem**: DeepSpeed cannot find the CUDA toolkit.
+**Solution**: Set `CUDA_HOME` before running training:
+```bash
+export CUDA_HOME=/usr/local/cuda
+```
+Or add to `~/.bashrc` for persistence. The setup script auto-detects this, but if it fails, set it manually. Verify with: `echo $CUDA_HOME && ls $CUDA_HOME/bin/nvcc`
+
 ## Setup Issues
 
 ### ms-swift Installation Conflicts
