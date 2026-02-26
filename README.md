@@ -35,16 +35,24 @@ Fine-tune and deploy LLMs using [ms-swift](https://github.com/modelscope/ms-swif
 
 ## Installation
 
-Install the plugin in Claude Code:
-
-```
-claude install-plugin /path/to/river-cc-market/plugins/finetune
-```
-
-Or set up the ms-swift environment manually:
+Install the finetune plugin directly from GitHub:
 
 ```bash
-cd plugins/finetune/skills/ms-swift
+/plugin marketplace add https://github.com/xiehust/river-cc-market.git
+/plugin install finetune@river-cc-market
+```
+
+Or clone the repo and install locally:
+
+```bash
+git clone https://github.com/xiehust/river-cc-market.git
+claude plugin add --from ./river-cc-market/plugins/finetune
+```
+
+Then set up the ms-swift environment:
+
+```bash
+cd river-cc-market/plugins/finetune/skills/ms-swift
 bash scripts/setup.sh
 ```
 
