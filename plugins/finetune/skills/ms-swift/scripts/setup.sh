@@ -55,6 +55,9 @@ fi
 echo "Creating virtual environment at $VENV_DIR ..."
 uv venv "$VENV_DIR" --python 3.11
 
+echo "Installing transformers from main branch (required for Qwen3.5 support)..."
+uv pip install "transformers @ git+https://github.com/huggingface/transformers.git" --python "$VENV_DIR/bin/python"
+
 echo "Installing ms-swift (from main branch for latest model support)..."
 uv pip install "ms-swift @ git+https://github.com/modelscope/ms-swift.git" --python "$VENV_DIR/bin/python"
 

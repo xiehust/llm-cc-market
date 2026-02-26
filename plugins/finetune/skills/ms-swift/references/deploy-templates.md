@@ -93,6 +93,142 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 \
     --port 8000
 ```
 
+## Qwen3.5 Deployment (Multimodal MoE)
+
+Qwen3.5 is a multimodal MoE model (35B total, 3B activated). It requires the latest vLLM/SGLang from source.
+
+**Prerequisites:**
+```bash
+# Transformers from main branch (released version does not support Qwen3.5)
+uv pip install "transformers @ git+https://github.com/huggingface/transformers.git" --python ~/swift-env/bin/python
+
+# vLLM (from nightly)
+uv pip install vllm --torch-backend=auto --extra-index-url https://wheels.vllm.ai/nightly --python ~/swift-env/bin/python
+
+# SGLang (from source)
+uv pip install 'sglang[all] @ git+https://github.com/sgl-project/sglang.git#subdirectory=python' --python ~/swift-env/bin/python
+
+# Required for Qwen3.5 multimodal
+uv pip install qwen_vl_utils torchvision --python ~/swift-env/bin/python
+```
+
+### vLLM — Standard (262K context)
+```bash
+vllm serve Qwen/Qwen3.5-35B-A3B \
+    --port 8000 \
+    --tensor-parallel-size 8 \
+    --max-model-len 262144 \
+    --reasoning-parser qwen3
+```
+
+### vLLM — Text-Only Mode (skip vision encoder, saves memory)
+```bash
+vllm serve Qwen/Qwen3.5-35B-A3B \
+    --port 8000 \
+    --tensor-parallel-size 8 \
+    --max-model-len 262144 \
+    --reasoning-parser qwen3 \
+    --language-model-only
+```
+
+### vLLM — With Tool Calling
+```bash
+vllm serve Qwen/Qwen3.5-35B-A3B \
+    --port 8000 \
+    --tensor-parallel-size 8 \
+    --max-model-len 262144 \
+    --reasoning-parser qwen3 \
+    --enable-auto-tool-choice \
+    --tool-call-parser qwen3_coder
+```
+
+### vLLM — Multi-Token Prediction (MTP, faster inference)
+```bash
+vllm serve Qwen/Qwen3.5-35B-A3B \
+    --port 8000 \
+    --tensor-parallel-size 8 \
+    --max-model-len 262144 \
+    --reasoning-parser qwen3 \
+    --speculative-config '{"method":"qwen3_next_mtp","num_speculative_tokens":2}'
+```
+
+### vLLM — Extended Context (1M tokens via YaRN)
+```bash
+VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 vllm serve Qwen/Qwen3.5-35B-A3B \
+    --port 8000 \
+    --tensor-parallel-size 8 \
+    --max-model-len 1010000 \
+    --reasoning-parser qwen3 \
+    --hf-overrides '{"text_config": {"rope_parameters": {"mrope_interleaved": true, "mrope_section": [11, 11, 10], "rope_type": "yarn", "rope_theta": 10000000, "partial_rotary_factor": 0.25, "factor": 4.0, "original_max_position_embeddings": 262144}}}'
+```
+
+### SGLang — Standard (262K context)
+```bash
+python -m sglang.launch_server \
+    --model-path Qwen/Qwen3.5-35B-A3B \
+    --port 8000 \
+    --tp-size 8 \
+    --mem-fraction-static 0.8 \
+    --context-length 262144 \
+    --reasoning-parser qwen3
+```
+
+### SGLang — With Tool Calling
+```bash
+python -m sglang.launch_server \
+    --model-path Qwen/Qwen3.5-35B-A3B \
+    --port 8000 \
+    --tp-size 8 \
+    --mem-fraction-static 0.8 \
+    --context-length 262144 \
+    --reasoning-parser qwen3 \
+    --tool-call-parser qwen3_coder
+```
+
+### SGLang — MTP (faster inference)
+```bash
+python -m sglang.launch_server \
+    --model-path Qwen/Qwen3.5-35B-A3B \
+    --port 8000 \
+    --tp-size 8 \
+    --mem-fraction-static 0.8 \
+    --context-length 262144 \
+    --reasoning-parser qwen3 \
+    --speculative-algo NEXTN \
+    --speculative-num-steps 3 \
+    --speculative-eagle-topk 1 \
+    --speculative-num-draft-tokens 4
+```
+
+### SGLang — Extended Context (1M tokens via YaRN)
+```bash
+SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 python -m sglang.launch_server \
+    --model-path Qwen/Qwen3.5-35B-A3B \
+    --port 8000 \
+    --tp-size 8 \
+    --context-length 1010000 \
+    --reasoning-parser qwen3 \
+    --json-model-override-args '{"text_config": {"rope_parameters": {"mrope_interleaved": true, "mrope_section": [11, 11, 10], "rope_type": "yarn", "rope_theta": 10000000, "partial_rotary_factor": 0.25, "factor": 4.0, "original_max_position_embeddings": 262144}}}'
+```
+
+### Qwen3.5 Recommended Sampling Parameters
+
+| Mode | Task | Temperature | Top-P | Top-K | Presence Penalty |
+|------|------|-------------|-------|-------|------------------|
+| Thinking | General | 1.0 | 0.95 | 20 | 1.5 |
+| Thinking | Coding | 0.6 | 0.95 | 20 | 0.0 |
+| Non-thinking | General | 0.7 | 0.8 | 20 | 1.5 |
+| Non-thinking | Reasoning | 1.0 | 1.0 | 40 | 2.0 |
+
+### Qwen3.5 Deployment Notes
+
+- Thinking mode is enabled by default — model generates `<think>...</think>` before responses
+- To disable thinking: pass `"chat_template_kwargs": {"enable_thinking": false}` via `extra_body`
+- Keep context >= 128K tokens to preserve thinking capabilities
+- Use `max_tokens: 32768` for general queries, `81920` for complex math/programming
+- In multi-turn conversations, exclude thinking content from conversation history
+- For text-only use, add `--language-model-only` (vLLM) to skip loading vision encoder
+
 ### Deploy with LoRA Adapter
 ```bash
 CUDA_VISIBLE_DEVICES=0 \
