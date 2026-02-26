@@ -73,6 +73,14 @@ echo ""
 echo "Or activate the environment:"
 echo "  source $VENV_DIR/bin/activate"
 echo ""
+# Install flash-linear-attention and causal-conv1d for fast path (avoids torch fallback)
+echo "Installing flash-linear-attention and causal-conv1d for fast path..."
+uv pip install causal-conv1d --python "$VENV_DIR/bin/python" 2>/dev/null || \
+    echo "WARNING: causal-conv1d install failed. See https://github.com/Dao-AILab/causal-conv1d"
+uv pip install "flash-linear-attention @ git+https://github.com/fla-org/flash-linear-attention.git" --python "$VENV_DIR/bin/python" 2>/dev/null || \
+    echo "WARNING: flash-linear-attention install failed. See https://github.com/fla-org/flash-linear-attention#installation"
+
+echo ""
 echo "Optional extras (install as needed):"
 echo "  uv pip install qwen_vl_utils torchvision --python $VENV_DIR/bin/python  # Required for Qwen3.5/Qwen-VL multimodal models"
 echo "  uv pip install ms-swift[vllm]      --python $VENV_DIR/bin/python  # vLLM inference/deployment"

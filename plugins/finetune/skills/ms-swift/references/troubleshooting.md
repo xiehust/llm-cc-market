@@ -137,6 +137,21 @@ Verify with: `nvcc --version && echo $CUDA_HOME`
 
 The setup script (`scripts/setup.sh`) attempts to install the CUDA toolkit automatically if `nvcc` is missing.
 
+## Performance / Fast Path Issues
+
+### "The fast path is not available because one of the required library is not installed. Falling back to torch implementation."
+**Problem**: Missing `flash-linear-attention` or `causal-conv1d` libraries. Training falls back to slower torch implementation.
+**Solution**: Install both libraries:
+```bash
+uv pip install causal-conv1d --python ~/swift-env/bin/python
+uv pip install "flash-linear-attention @ git+https://github.com/fla-org/flash-linear-attention.git" --python ~/swift-env/bin/python
+```
+Requires CUDA toolkit (`nvcc`). See:
+- https://github.com/fla-org/flash-linear-attention#installation
+- https://github.com/Dao-AILab/causal-conv1d
+
+The setup script (`scripts/setup.sh`) installs these automatically.
+
 ## Multimodal / VL Model Issues
 
 ### "Missing qwen_vl_utils" or "Missing torchvision" for Qwen3.5 / Qwen-VL Models
