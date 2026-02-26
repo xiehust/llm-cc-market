@@ -4,6 +4,29 @@ set -e
 
 VENV_DIR="${VENV_DIR:-$HOME/swift-env}"
 
+# Install CUDA toolkit if nvcc is not available (common on EC2 GPU instances)
+if ! command -v nvcc &> /dev/null && [ ! -f "/usr/local/cuda/bin/nvcc" ]; then
+    echo "CUDA toolkit compiler (nvcc) not found. Installing CUDA toolkit..."
+    if command -v apt-get &> /dev/null; then
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq nvidia-cuda-toolkit 2>/dev/null || {
+            echo "nvidia-cuda-toolkit not available via apt, trying NVIDIA repo..."
+            DISTRO=$(. /etc/os-release && echo "${ID}${VERSION_ID}" | tr -d '.')
+            wget -q "https://developer.download.nvidia.com/compute/cuda/repos/${DISTRO}/x86_64/cuda-keyring_1.1-1_all.deb" -O /tmp/cuda-keyring.deb 2>/dev/null && \
+                sudo dpkg -i /tmp/cuda-keyring.deb && \
+                sudo apt-get update -qq && \
+                sudo apt-get install -y -qq cuda-toolkit 2>/dev/null || \
+                echo "WARNING: Could not install CUDA toolkit automatically. Install manually."
+        }
+    elif command -v yum &> /dev/null; then
+        sudo yum install -y -q cuda-toolkit 2>/dev/null || \
+            echo "WARNING: Could not install CUDA toolkit via yum. Install manually."
+    else
+        echo "WARNING: Could not install CUDA toolkit. Package manager not recognized."
+        echo "Install CUDA toolkit manually: https://developer.nvidia.com/cuda-downloads"
+    fi
+fi
+
 # Auto-detect CUDA_HOME if not set (required by DeepSpeed)
 if [ -z "$CUDA_HOME" ]; then
     if [ -d "/usr/local/cuda" ]; then
@@ -13,6 +36,7 @@ if [ -z "$CUDA_HOME" ]; then
     fi
     if [ -n "$CUDA_HOME" ]; then
         echo "Auto-detected CUDA_HOME=$CUDA_HOME"
+        echo "export CUDA_HOME=$CUDA_HOME" >> ~/.bashrc
     else
         echo "WARNING: CUDA_HOME not set and could not be auto-detected."
         echo "DeepSpeed will not work without it. Set it manually:"

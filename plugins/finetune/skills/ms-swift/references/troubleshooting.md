@@ -121,13 +121,21 @@ Common issues and solutions when using ms-swift.
 
 ## DeepSpeed Issues
 
-### "DeepSpeed needs CUDA_HOME set"
-**Problem**: DeepSpeed cannot find the CUDA toolkit.
-**Solution**: Set `CUDA_HOME` before running training:
+### "DeepSpeed needs CUDA_HOME set" / nvcc Not Found
+**Problem**: DeepSpeed cannot find the CUDA toolkit compiler. Common on EC2 GPU instances that have NVIDIA drivers but no CUDA toolkit installed.
+**Solution**:
+1. Install CUDA toolkit:
+```bash
+sudo apt-get update && sudo apt-get install -y nvidia-cuda-toolkit
+```
+2. Set `CUDA_HOME`:
 ```bash
 export CUDA_HOME=/usr/local/cuda
+echo 'export CUDA_HOME=/usr/local/cuda' >> ~/.bashrc
 ```
-Or add to `~/.bashrc` for persistence. The setup script auto-detects this, but if it fails, set it manually. Verify with: `echo $CUDA_HOME && ls $CUDA_HOME/bin/nvcc`
+Verify with: `nvcc --version && echo $CUDA_HOME`
+
+The setup script (`scripts/setup.sh`) attempts to install the CUDA toolkit automatically if `nvcc` is missing.
 
 ## Multimodal / VL Model Issues
 
