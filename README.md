@@ -97,8 +97,8 @@ river-cc-market/
 
 Once installed, use natural language in Claude Code to fine-tune and deploy models:
 
-- **Train (ms-swift):** "Fine-tune Qwen3-4B-Instruct-2507 on my dataset using LoRA with ms-swift"
-- **Train (LLaMA-Factory):** "Fine-tune Qwen3-4B-Instruct-2507 with llamafactory using QLoRA"
+- **Train (ms-swift):** "Fine-tune Qwen3-4B-Instruct-2507 on dataset yahma/alpaca-cleaned#1000 using LoRA with ms-swift"
+- **Train (LLaMA-Factory):** "Fine-tune Qwen3-4B-Instruct-2507 on dataset yahma/alpaca-cleaned#1000 with llamafactory using QLoRA"
 - **RLHF:** "Run GRPO training on my math dataset with accuracy rewards"
 - **DPO:** "Run DPO alignment on my preference data with llamafactory"
 - **Deploy:** "Deploy my fine-tuned model as an OpenAI-compatible API with vLLM"
