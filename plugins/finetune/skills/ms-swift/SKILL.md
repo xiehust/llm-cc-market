@@ -70,6 +70,7 @@ Gather from the user:
 - **Dataset**: Custom path or hub dataset ID
 - **Hardware**: GPU count, memory per GPU
 - **Hub**: HuggingFace (`--use_hf`) or ModelScope (default)
+- **Backend**: If MoE model or large-scale multi-GPU, suggest Megatron. Run `~/swift-env/bin/python scripts/check_megatron_env.py` to verify Megatron deps before using `megatron sft/pt/rlhf`.
 
 ### 2. Generate Command
 
@@ -129,7 +130,10 @@ Megatron-SWIFT integrates NVIDIA Megatron-LM parallel technologies for high-perf
 | HF to Megatron | `swift export --model X --to_mcore true --output_dir X-mcore` |
 | Megatron to HF | `swift export --mcore_model X-mcore --to_hf true --output_dir X-hf` |
 
-**Environment**: Requires extra deps (transformer_engine, megatron-core, apex). See **`references/megatron-guide.md`** for setup and full templates.
+**Environment**: Requires extra deps (transformer_engine, megatron-core, apex). See **`references/megatron-guide.md`** for setup and full templates. Verify the environment with:
+```bash
+~/swift-env/bin/python scripts/check_megatron_env.py
+```
 
 **Important**: Megatron uses `--micro_batch_size` and `--global_batch_size` instead of `--per_device_train_batch_size` and `--gradient_accumulation_steps`. Set `PYTORCH_CUDA_ALLOC_CONF='expandable_segments:True'` for memory efficiency.
 

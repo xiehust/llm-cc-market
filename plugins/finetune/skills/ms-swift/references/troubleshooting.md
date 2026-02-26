@@ -187,6 +187,29 @@ pip install ms-swift[vllm]
 ```
 Ensure CUDA 12 and compatible PyTorch version.
 
+## Megatron Issues
+
+### transformer_engine Install Fails: Missing cudnn.h / nccl.h
+**Problem**: `pip install transformer_engine[pytorch]` fails with `fatal error: cudnn.h: No such file or directory` or `nccl.h: No such file or directory`. Common on EC2 GPU instances without system-wide cuDNN/NCCL dev headers.
+**Solution**: Point the compiler at the pip-installed nvidia packages inside the venv:
+```bash
+CUDA_HOME=/usr \
+CUDNN_HOME=~/swift-env/lib/python3.11/site-packages/nvidia/cudnn \
+CUDNN_PATH=~/swift-env/lib/python3.11/site-packages/nvidia/cudnn \
+CPLUS_INCLUDE_PATH="~/swift-env/lib/python3.11/site-packages/nvidia/cudnn/include:~/swift-env/lib/python3.11/site-packages/nvidia/nccl/include" \
+LIBRARY_PATH="~/swift-env/lib/python3.11/site-packages/nvidia/cudnn/lib:~/swift-env/lib/python3.11/site-packages/nvidia/nccl/lib" \
+uv pip install "transformer-engine[pytorch]" megatron-core --python ~/swift-env/bin/python
+```
+Adjust `python3.11` to match your Python version. The `nvidia-cudnn-cu12` and `nvidia-nccl-cu12` pip packages contain the needed headers.
+
+### Missing apex
+**Problem**: Megatron training fails with apex import errors.
+**Solution**: Either install apex (see `references/megatron-guide.md`) or set `--gradient_accumulation_fusion false` to run without it.
+
+### Megatron Multi-Node Data Inconsistency
+**Problem**: Multi-node Megatron training hangs or produces inconsistent results.
+**Solution**: Set `MODELSCOPE_CACHE` to a shared storage path so all nodes use the same dataset cache. This is critical for data consistency across nodes.
+
 ## Environment Variables Quick Reference
 
 | Variable | Purpose | Example |
@@ -206,3 +229,5 @@ Ensure CUDA 12 and compatible PyTorch version.
 | `SWIFT_UI_LANG` | Web-UI language | `en` |
 | `NCCL_DEBUG` | NCCL debugging | `INFO` |
 | `OMP_NUM_THREADS` | OpenMP threads (multimodal CPU) | `4` |
+| `MEGATRON_LM_PATH` | Path to Megatron-LM repo clone | `/path/to/Megatron-LM` |
+| `PYTORCH_CUDA_ALLOC_CONF` | CUDA memory allocator config | `expandable_segments:True` |

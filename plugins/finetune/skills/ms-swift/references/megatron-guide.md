@@ -35,13 +35,68 @@ Qwen3, Qwen3-MoE, Qwen3-VL, Qwen3-Omni, Qwen2.5, Llama3, DeepSeek-R1, GLM4.5, In
 
 Megatron-SWIFT requires additional dependencies beyond ms-swift:
 
+### Option A: Install into swift-env (Recommended for EC2 / no system cuDNN)
+
+On EC2 or environments where cuDNN/NCCL dev headers are not installed globally, you must point the build at the pip-installed nvidia packages inside the venv:
+
+```bash
+# Set environment variables for compilation
+# Adjust python version (3.11) to match your swift-env
+export CUDA_HOME=/usr
+export CUDNN_HOME=~/swift-env/lib/python3.11/site-packages/nvidia/cudnn
+export CUDNN_PATH=~/swift-env/lib/python3.11/site-packages/nvidia/cudnn
+export CPLUS_INCLUDE_PATH="~/swift-env/lib/python3.11/site-packages/nvidia/cudnn/include:~/swift-env/lib/python3.11/site-packages/nvidia/nccl/include"
+export LIBRARY_PATH="~/swift-env/lib/python3.11/site-packages/nvidia/cudnn/lib:~/swift-env/lib/python3.11/site-packages/nvidia/nccl/lib"
+
+# 1. Install pybind11
+uv pip install pybind11 --python ~/swift-env/bin/python
+
+# 2. Install Transformer Engine + megatron-core
+# If errors occur, see: https://github.com/modelscope/ms-swift/issues/3793
+CUDA_HOME=/usr \
+CUDNN_HOME=~/swift-env/lib/python3.11/site-packages/nvidia/cudnn \
+CUDNN_PATH=~/swift-env/lib/python3.11/site-packages/nvidia/cudnn \
+CPLUS_INCLUDE_PATH="~/swift-env/lib/python3.11/site-packages/nvidia/cudnn/include:~/swift-env/lib/python3.11/site-packages/nvidia/nccl/include" \
+LIBRARY_PATH="~/swift-env/lib/python3.11/site-packages/nvidia/cudnn/lib:~/swift-env/lib/python3.11/site-packages/nvidia/nccl/lib" \
+uv pip install "transformer-engine[pytorch]" megatron-core --python ~/swift-env/bin/python
+
+# 3. Install NVIDIA apex (optional but recommended)
+# Megatron-SWIFT can run without apex by setting --gradient_accumulation_fusion false
+git clone https://github.com/NVIDIA/apex
+cd apex
+CUDA_HOME=/usr \
+uv pip install -v --no-build-isolation \
+    --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" \
+    . --python ~/swift-env/bin/python
+cd ..
+
+# 4. Clone Megatron-LM repo (needed for training modules)
+# swift will auto-clone, or set MEGATRON_LM_PATH to an existing clone
+git clone --branch core_r0.15.0 https://github.com/NVIDIA/Megatron-LM.git
+export MEGATRON_LM_PATH='/path/to/Megatron-LM'
+
+# 5. Install flash-attn
+# Do NOT install a version higher than transformer_engine's limit
+CUDA_HOME=/usr MAX_JOBS=8 \
+uv pip install "flash-attn==2.8.3" --no-build-isolation --python ~/swift-env/bin/python
+
+# 6. For multi-node training, set shared cache path (critical!)
+export MODELSCOPE_CACHE='/shared/storage/path'
+```
+
+**Why the extra env vars?** Transformer Engine compiles CUDA kernels at install time and needs cuDNN/NCCL headers. On EC2 GPU instances, `nvcc` is at `/usr/bin/nvcc` (so `CUDA_HOME=/usr`) but cuDNN dev headers are not installed system-wide. The pip packages `nvidia-cudnn-cu12` and `nvidia-nccl-cu12` (installed as dependencies) contain the needed headers inside the venv.
+
+### Option B: Standard install (system with cuDNN dev headers)
+
+If your system has cuDNN and NCCL development headers installed globally (e.g., Docker images, DGX):
+
 ```bash
 # 1. Install pybind11
 pip install pybind11
 
-# 2. Install Transformer Engine
-# If errors occur, see: https://github.com/modelscope/ms-swift/issues/3793
+# 2. Install Transformer Engine + megatron-core
 pip install --no-build-isolation transformer_engine[pytorch]
+pip install megatron-core
 
 # 3. Install NVIDIA apex (optional but recommended)
 # Megatron-SWIFT can run without apex by setting --gradient_accumulation_fusion false
@@ -50,21 +105,28 @@ cd apex
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation \
     --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" ./
 
-# 4. Install megatron-core
-pip install git+https://github.com/NVIDIA/Megatron-LM.git@core_r0.15.0
-
-# 5. Clone Megatron-LM repo (needed for training modules)
+# 4. Clone Megatron-LM repo (needed for training modules)
 # swift will auto-clone, or set MEGATRON_LM_PATH to an existing clone
 git clone --branch core_r0.15.0 https://github.com/NVIDIA/Megatron-LM.git
 export MEGATRON_LM_PATH='/path/to/Megatron-LM'
 
-# 6. Install flash-attn
+# 5. Install flash-attn
 # Do NOT install a version higher than transformer_engine's limit
 MAX_JOBS=8 pip install "flash-attn==2.8.3" --no-build-isolation
 
-# 7. For multi-node training, set shared cache path (critical!)
+# 6. For multi-node training, set shared cache path (critical!)
 export MODELSCOPE_CACHE='/shared/storage/path'
 ```
+
+### Verify Installation
+
+After installing, run the environment check script to confirm everything works:
+
+```bash
+~/swift-env/bin/python scripts/check_megatron_env.py
+```
+
+This checks all required (PyTorch, CUDA, transformer_engine, megatron-core, swift) and optional (apex, flash_attn, MEGATRON_LM_PATH) dependencies, reports versions, and provides fix instructions for any failures.
 
 ### Recommended Versions
 
@@ -631,6 +693,19 @@ Remove `CUDA_VISIBLE_DEVICES=0` to use multi-GPU conversion. Remove `--test_conv
 
 ### Attention backend compatibility
 Some models (Llama4, GPT-OSS) don't support flash attention. Set `--attention_backend unfused --padding_free false`.
+
+### transformer_engine install fails: missing cudnn.h / nccl.h
+**Problem**: `pip install transformer_engine[pytorch]` fails with errors like `fatal error: cudnn.h: No such file or directory` or `nccl.h: No such file or directory`. Common on EC2 GPU instances that have NVIDIA drivers but no cuDNN/NCCL dev headers installed system-wide.
+**Solution**: Point the build at the pip-installed nvidia packages inside the venv:
+```bash
+CUDA_HOME=/usr \
+CUDNN_HOME=~/swift-env/lib/python3.11/site-packages/nvidia/cudnn \
+CUDNN_PATH=~/swift-env/lib/python3.11/site-packages/nvidia/cudnn \
+CPLUS_INCLUDE_PATH="~/swift-env/lib/python3.11/site-packages/nvidia/cudnn/include:~/swift-env/lib/python3.11/site-packages/nvidia/nccl/include" \
+LIBRARY_PATH="~/swift-env/lib/python3.11/site-packages/nvidia/cudnn/lib:~/swift-env/lib/python3.11/site-packages/nvidia/nccl/lib" \
+uv pip install "transformer-engine[pytorch]" megatron-core --python ~/swift-env/bin/python
+```
+Adjust `python3.11` to match your actual Python version. The `nvidia-cudnn-cu12` and `nvidia-nccl-cu12` pip packages contain the needed headers.
 
 ### LoRA + transformers 5.0 MoE issue
 transformers 5.0 restructured MoE models, which may cause LoRA inference issues. Use `--merge_lora true` for MoE models (vLLM is not affected).
