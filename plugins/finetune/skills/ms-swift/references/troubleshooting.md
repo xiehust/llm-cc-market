@@ -130,8 +130,8 @@ sudo apt-get update && sudo apt-get install -y nvidia-cuda-toolkit
 ```
 2. Set `CUDA_HOME`:
 ```bash
-export CUDA_HOME=/usr/local/cuda
-echo 'export CUDA_HOME=/usr/local/cuda' >> ~/.bashrc
+export CUDA_HOME=/usr
+echo 'export CUDA_HOME=/usr' >> ~/.bashrc
 ```
 Verify with: `nvcc --version && echo $CUDA_HOME`
 

@@ -29,8 +29,10 @@ fi
 
 # Auto-detect CUDA_HOME if not set (required by DeepSpeed)
 if [ -z "$CUDA_HOME" ]; then
-    if [ -d "/usr/local/cuda" ]; then
-        export CUDA_HOME="/usr/local/cuda"
+    if [ -f "/usr/bin/nvcc" ]; then
+        export CUDA_HOME="/usr"
+    elif [ -d "/usr/local/cuda" ]; then
+        export CUDA_HOME="/usr"
     elif command -v nvcc &> /dev/null; then
         export CUDA_HOME="$(dirname "$(dirname "$(which nvcc)")")"
     fi
