@@ -1,10 +1,10 @@
-# River CC Market
+# LLM CC Market
 
 A Claude Code plugin marketplace for LLM fine-tuning and deployment workflows.
 
 ## Overview
 
-River CC Market provides reusable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that simplify model fine-tuning, RLHF training, and deployment. It wraps production-grade frameworks behind guided workflows so you can go from raw data to a deployed model with natural language commands.
+LLM CC Market provides reusable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that simplify model fine-tuning, RLHF training, and deployment. It wraps production-grade frameworks behind guided workflows so you can go from raw data to a deployed model with natural language commands.
 
 ## Available Plugins
 
@@ -49,26 +49,26 @@ Fine-tune and deploy LLMs using [ms-swift](https://github.com/modelscope/ms-swif
 Install the finetune plugin directly from GitHub:
 
 ```bash
-/plugin marketplace add https://github.com/xiehust/river-cc-market.git
-/plugin install finetune@river-cc-market
+/plugin marketplace add xiehust/llm-cc-market
+/plugin install finetune@llm-cc-market
 ```
 
 Or clone the repo and install locally:
 
 ```bash
-git clone https://github.com/xiehust/river-cc-market.git
-claude plugin add --from ./river-cc-market/plugins/finetune
+git clone https://github.com/xiehust/llm-cc-market.git
+claude plugin add --from ./llm-cc-market/plugins/finetune
 ```
 
 Then set up the training environment (choose one or both):
 
 ```bash
 # ms-swift
-cd river-cc-market/plugins/finetune/skills/ms-swift
+cd llm-cc-market/plugins/finetune/skills/ms-swift
 bash scripts/setup.sh
 
 # LLaMA-Factory
-cd river-cc-market/plugins/finetune/skills/llamafactory
+cd llm-cc-market/plugins/finetune/skills/llamafactory
 bash scripts/setup.sh
 ```
 
@@ -77,7 +77,7 @@ Each setup script installs [uv](https://github.com/astral-sh/uv), creates an iso
 ## Repository Structure
 
 ```
-river-cc-market/
+llm-cc-market/
 ├── .claude-plugin/
 │   └── marketplace.json              # Marketplace registry
 └── plugins/
