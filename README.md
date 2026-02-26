@@ -108,6 +108,30 @@ Once installed, use natural language in Claude Code to fine-tune and deploy mode
 
 The skill handles environment setup, command generation, hardware sizing, and data format validation.
 
+## Skill 简介
+
+### ms-swift
+
+**ms-swift**（ModelScope SWIFT）是阿里巴巴 ModelScope 团队开源的大模型微调与部署框架，发表于 AAAI 2025。该 skill 封装了 ms-swift 的完整工作流，支持通过自然语言指令完成模型训练、对齐、评估、量化和部署。
+
+- 支持 600+ 文本大模型和 300+ 多模态模型（Qwen3、Llama4、DeepSeek-R1/V3、GLM4/5 等）
+- 最全面的 RLHF/RL 算法支持：GRPO 及变体（DAPO、SAPO、CISPO、CHORD）、DPO、KTO、PPO、GKD 等
+- 原生 Megatron 集成，MoE 模型训练可获 10 倍加速
+- 通过 CLI 命令行参数驱动（`swift sft --model X --dataset Y`）
+- 支持 vLLM/SGLang/LMDeploy 多种推理后端部署为 OpenAI 兼容 API
+
+### llamafactory
+
+**LLaMA-Factory**（LlamaFactory）是由 hiyouga 开源的统一大模型微调框架，发表于 ACL 2024，GitHub 67,000+ stars。该 skill 封装了 LLaMA-Factory 的 YAML 配置驱动工作流，支持零代码 Web UI 训练和自然语言指令操作。
+
+- 支持 100+ 模型家族，Day-0/Day-1 极速适配新模型（Qwen3、Llama4、DeepSeek-R1/V3、Gemma3 等）
+- 全 YAML 配置驱动，无需记忆命令行参数
+- 内置 LlamaBoard Web UI，支持零代码训练和推理
+- 丰富的微调方法：LoRA、QLoRA、Full、Freeze、OFT、DoRA、LoRA+、PiSSA、GaLore
+- 偏好对齐算法：DPO、KTO、PPO、ORPO、SimPO
+- Unsloth 加速集成（LoRA 训练提速 170%，内存减少 50%）
+- KTransformers 支持：2 张 4090 即可微调 DeepSeek-V3（671B）
+
 ## License
 
 See individual plugin directories for license details.
