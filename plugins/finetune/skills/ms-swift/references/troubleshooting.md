@@ -131,11 +131,11 @@ Or add to `~/.bashrc` for persistence. The setup script auto-detects this, but i
 
 ## Multimodal / VL Model Issues
 
-### "Missing qwen_vl_utils" for Qwen3.5 / Qwen-VL Models
-**Problem**: `ModuleNotFoundError: No module named 'qwen_vl_utils'` when using Qwen3.5 or Qwen3-VL models. Qwen3.5 is a multimodal MoE model that requires vision utilities even for text-only tasks.
-**Solution**: Install the qwen_vl_utils package:
+### "Missing qwen_vl_utils" or "Missing torchvision" for Qwen3.5 / Qwen-VL Models
+**Problem**: `ModuleNotFoundError: No module named 'qwen_vl_utils'` or `No module named 'torchvision'` when using Qwen3.5 or Qwen3-VL models. Qwen3.5 is a multimodal MoE model that requires vision utilities and torchvision even for text-only tasks.
+**Solution**: Install both packages:
 ```bash
-uv pip install qwen_vl_utils --python ~/swift-env/bin/python
+uv pip install qwen_vl_utils torchvision --python ~/swift-env/bin/python
 ```
 For video support, also install:
 ```bash
