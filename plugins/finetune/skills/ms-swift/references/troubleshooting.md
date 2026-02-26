@@ -189,6 +189,20 @@ Ensure CUDA 12 and compatible PyTorch version.
 
 ## Megatron Issues
 
+### Megatron Attention Backend Error (No dot product attention backend available)
+**Problem**: `ValueError: No dot product attention backend is available for the provided inputs` when running `megatron sft` or `megatron pt`. All ranks crash at the first training step.
+**Root Cause**: Transformer Engine requires either flash-attn or its built-in fused attention. flash-attn is often not installed, and fused attention may not work on all GPU architectures (e.g., L40S, A10).
+**Solution**: Either install flash-attn:
+```bash
+uv pip install flash-attn --no-build-isolation --python ~/swift-env/bin/python
+```
+Or use the unfused attention backend (slower but always works):
+```bash
+NVTE_FUSED_ATTN=0 NVTE_FLASH_ATTN=0 \
+~/swift-env/bin/megatron sft --attention_backend unfused ...
+```
+Run with `NVTE_DEBUG=1 NVTE_DEBUG_LEVEL=2` to diagnose which backends are available.
+
 ### transformer_engine Install Fails: Missing cudnn.h / nccl.h
 **Problem**: `pip install transformer_engine[pytorch]` fails with `fatal error: cudnn.h: No such file or directory` or `nccl.h: No such file or directory`. Common on EC2 GPU instances without system-wide cuDNN/NCCL dev headers.
 **Solution**: Point the compiler at the pip-installed nvidia packages inside the venv:
@@ -231,3 +245,7 @@ Adjust `python3.11` to match your Python version. The `nvidia-cudnn-cu12` and `n
 | `OMP_NUM_THREADS` | OpenMP threads (multimodal CPU) | `4` |
 | `MEGATRON_LM_PATH` | Path to Megatron-LM repo clone | `/path/to/Megatron-LM` |
 | `PYTORCH_CUDA_ALLOC_CONF` | CUDA memory allocator config | `expandable_segments:True` |
+| `NVTE_FUSED_ATTN` | Enable/disable TE fused attention | `0` (disable) |
+| `NVTE_FLASH_ATTN` | Enable/disable TE flash attention | `0` (disable) |
+| `NVTE_DEBUG` | Transformer Engine debug logging | `1` |
+| `NVTE_DEBUG_LEVEL` | TE debug verbosity (1-2) | `2` |

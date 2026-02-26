@@ -323,3 +323,81 @@ output_dir: output
 ```
 
 Usage: `~/swift-env/bin/swift sft --config config.yaml`
+
+## Megatron MoE LoRA SFT (Multi-GPU, Expert Parallel)
+
+Use `megatron sft` instead of `swift sft` for MoE models -- provides up to 10x speedup via Megatron-Core's expert parallelism.
+
+**Important**: flash-attn must be installed, or use `--attention_backend unfused` with `NVTE_FUSED_ATTN=0 NVTE_FLASH_ATTN=0`. Without this, Transformer Engine will throw `ValueError: No dot product attention backend is available`.
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3 NPROC_PER_NODE=4 \
+NVTE_FUSED_ATTN=0 NVTE_FLASH_ATTN=0 \
+~/swift-env/bin/megatron sft \
+    --model Qwen/Qwen3-30B-A3B \
+    --use_hf \
+    --tuner_type lora \
+    --dataset 'yahma/alpaca-cleaned#500' \
+    --torch_dtype bfloat16 \
+    --lora_rank 8 \
+    --lora_alpha 32 \
+    --target_modules all-linear \
+    --tensor_model_parallel_size 1 \
+    --expert_model_parallel_size 4 \
+    --micro_batch_size 1 \
+    --global_batch_size 16 \
+    --num_train_epochs 1 \
+    --lr 1e-4 \
+    --min_lr 1e-5 \
+    --lr_warmup_fraction 0.05 \
+    --weight_decay 0.01 \
+    --clip_grad 1.0 \
+    --moe_aux_loss_coeff 0.01 \
+    --moe_grouped_gemm \
+    --attention_backend unfused \
+    --recompute_granularity selective \
+    --max_length 2048 \
+    --logging_steps 5 \
+    --save_steps 50 \
+    --save_total_limit 2 \
+    --output_dir output
+```
+
+**Key differences from `swift sft`**:
+- Uses `megatron sft` command (not `swift sft`)
+- Batch sizes: `--micro_batch_size` + `--global_batch_size` (not `--per_device_train_batch_size` + `--gradient_accumulation_steps`)
+- Parallelism: `--expert_model_parallel_size N` distributes MoE experts across N GPUs
+- TP * PP * EP * DP must equal NPROC_PER_NODE (e.g., EP=4 with 4 GPUs means DP=1)
+- MoE params: `--moe_aux_loss_coeff` (load balancing), `--moe_grouped_gemm` (faster expert computation)
+- Attention: `--attention_backend unfused` if flash-attn is not installed
+- Training logs go to stderr (use `2>&1 | tee train.log` to capture everything)
+- Checkpoints are auto-merged to HuggingFace format in `checkpoint-N-merged/`
+
+## Megatron MoE Full SFT (Multi-GPU, EP + TP)
+
+For full-parameter training of large MoE models, combine expert and tensor parallelism:
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 NPROC_PER_NODE=8 \
+NVTE_FUSED_ATTN=0 NVTE_FLASH_ATTN=0 \
+~/swift-env/bin/megatron sft \
+    --model Qwen/Qwen3-30B-A3B \
+    --use_hf \
+    --tuner_type full \
+    --dataset 'yahma/alpaca-cleaned#2000' \
+    --torch_dtype bfloat16 \
+    --tensor_model_parallel_size 2 \
+    --expert_model_parallel_size 4 \
+    --micro_batch_size 1 \
+    --global_batch_size 16 \
+    --num_train_epochs 1 \
+    --lr 5e-6 \
+    --min_lr 5e-7 \
+    --lr_warmup_fraction 0.05 \
+    --moe_aux_loss_coeff 0.01 \
+    --moe_grouped_gemm \
+    --attention_backend unfused \
+    --recompute_granularity selective \
+    --max_length 4096 \
+    --output_dir output
+```
