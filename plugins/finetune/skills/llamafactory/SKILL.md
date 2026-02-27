@@ -311,6 +311,84 @@ Register custom datasets in `dataset_info.json`. See **`references/dataset-forma
 
 Always set `FORCE_TORCHRUN=1` when using DeepSpeed.
 
+## Troubleshooting Index
+
+Quick reference for all known issues in **`references/troubleshooting.md`**:
+
+### Memory Issues
+| Problem | Section |
+|---------|---------|
+| CUDA out of memory (most common) | CUDA Out of Memory |
+
+### Quantization Issues
+| Problem | Section |
+|---------|---------|
+| Cannot use quantization with full/freeze fine-tuning | Quantization Issues |
+| Cannot resize embeddings of quantized model | Quantization Issues |
+| Quantized model only accepts single adapter | Quantization Issues |
+| QLoRA training tips | Quantization Issues |
+
+### DeepSpeed Issues
+| Problem | Section |
+|---------|---------|
+| "DeepSpeed needs CUDA_HOME set" / nvcc not found | DeepSpeed Issues |
+| "Please use FORCE_TORCHRUN=1" | DeepSpeed Issues |
+| predict_with_generate incompatible with ZeRO-3 | DeepSpeed Issues |
+| Unsloth incompatible with ZeRO-3 | DeepSpeed Issues |
+| GaLore/APOLLO incompatible with DeepSpeed | DeepSpeed Issues |
+| pure_bf16 incompatible with ZeRO-3 | DeepSpeed Issues |
+
+### Training Stage Issues
+| Problem | Section |
+|---------|---------|
+| predict_with_generate only works for SFT | Training Stage Issues |
+| neat_packing only works for SFT | Training Stage Issues |
+| PPO requires reward model | Training Stage Issues |
+| PPO logger limitation (wandb/tensorboard only) | Training Stage Issues |
+
+### LoRA Issues
+| Problem | Section |
+|---------|---------|
+| Adapter only valid for LoRA/OFT | LoRA Issues |
+| Cannot combine LoRA with GaLore/APOLLO/BAdam | LoRA Issues |
+| Missing embedding training warning | LoRA Issues |
+
+### Reasoning Model Issues
+| Problem | Section |
+|---------|---------|
+| Understanding enable_thinking modes | Reasoning Model Issues |
+| Template selection for thinking models | Reasoning Model Issues |
+
+### Mixed Precision Issues
+| Problem | Section |
+|---------|---------|
+| "We recommend enable mixed precision training" | Mixed Precision Issues |
+| "This device does not support pure_bf16" | Mixed Precision Issues |
+| FP8 incompatible with quantization | Mixed Precision Issues |
+
+### Dataset Issues
+| Problem | Section |
+|---------|---------|
+| Unknown arguments warning | Dataset Issues |
+| Streaming mode requires max_steps | Dataset Issues |
+| Dataset not found | Dataset Issues |
+
+### Version Compatibility
+| Problem | Section |
+|---------|---------|
+| Python version requirements (3.11+) | Version Compatibility |
+| neat_packing broken with transformers>=4.53.0 | Version Compatibility |
+
+### SSH / Remote Execution Issues
+| Problem | Section |
+|---------|---------|
+| SSH connection refused | SSH Issues |
+| SSH permission denied | SSH Issues |
+| Training killed on SSH disconnect | SSH Issues |
+| Multi-node NCCL timeout | SSH Issues |
+| Cannot find training process on remote | SSH Issues |
+| SCP transfer fails | SSH Issues |
+
 ## Notes
 
 - LLaMA-Factory is YAML-driven -- all training configs are YAML files, not CLI flags
