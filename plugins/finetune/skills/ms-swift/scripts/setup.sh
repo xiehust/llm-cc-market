@@ -50,6 +50,10 @@ echo "Installing uv (if not present)..."
 if ! command -v uv &> /dev/null; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
     export PATH="$HOME/.local/bin:$PATH"
+    # Persist PATH so future SSH sessions can find uv
+    if ! grep -q '.local/bin' ~/.bashrc 2>/dev/null; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+    fi
 fi
 
 echo "Creating virtual environment at $VENV_DIR ..."

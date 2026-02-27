@@ -111,6 +111,10 @@ scp -i PEM scripts/setup.sh ubuntu@IP:~/setup.sh
 ssh -i PEM ubuntu@IP "bash ~/setup.sh"
 ```
 
+> **uv path note**: `uv` installs to `~/.local/bin/uv`. Non-login SSH sessions may not have it in PATH. When running `uv` commands via SSH, always either:
+> - Use the full path: `ssh -i PEM ubuntu@IP "~/.local/bin/uv pip install ..."`
+> - Or source bashrc first: `ssh -i PEM ubuntu@IP "source ~/.bashrc && uv pip install ..."`
+
 #### Distributed Training (Multi-Node)
 
 When distributed training across N machines:
@@ -463,6 +467,7 @@ Quick reference for all known issues in **`references/troubleshooting.md`**:
 | Training killed on SSH disconnect | SSH Issues |
 | Multi-node NCCL timeout | SSH Issues |
 | Cannot find training process on remote | SSH Issues |
+| **uv not found on remote machine** (`~/.local/bin/uv`) | SSH Issues |
 | SCP transfer fails | SSH Issues |
 
 ## Notes

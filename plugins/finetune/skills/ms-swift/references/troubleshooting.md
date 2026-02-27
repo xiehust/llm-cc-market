@@ -333,6 +333,19 @@ ssh -i PEM ubuntu@IP "nvidia-smi"
 ssh -i PEM ubuntu@IP "tail -50 ~/train.log"
 ```
 
+### uv Not Found on Remote Machine
+**Problem**: `bash: uv: command not found` or `/home/ubuntu/swift-env/bin/uv: No such file or directory` when running `uv` commands via SSH.
+**Root Cause**: `uv` installs to `~/.local/bin/uv`, not inside the venv. Non-login SSH sessions (`ssh user@host "command"`) don't source `~/.bashrc`, so `~/.local/bin` is not in PATH.
+**Solution**: Use the full path or source bashrc:
+```bash
+# Option 1: Full path (recommended)
+ssh -i PEM ubuntu@IP "~/.local/bin/uv pip install PACKAGE --python ~/swift-env/bin/python"
+
+# Option 2: Source bashrc first
+ssh -i PEM ubuntu@IP "source ~/.bashrc && uv pip install PACKAGE --python ~/swift-env/bin/python"
+```
+Note: `uv` is NOT inside `~/swift-env/bin/`. It is always at `~/.local/bin/uv`.
+
 ### SCP Transfer Fails
 **Problem**: `scp` file transfer to/from EC2 fails or hangs.
 **Solution**:
