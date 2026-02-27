@@ -194,6 +194,82 @@ FORCE_TORCHRUN=1 NNODES=2 NODE_RANK=0 MASTER_ADDR=192.168.0.1 MASTER_PORT=29500 
 > scp -i PEM -r ubuntu@IP:~/output ./local_output
 > ```
 
+### 5. Save Training Record
+
+After training completes (or fails), save a training record as a markdown file in the working directory. Use the `Write` tool to create the file.
+
+**File name**: `training-record-YYYY-MM-DD-HHMMSS.md` (use the training start time)
+
+**Template**:
+
+```markdown
+# Training Record — {MODEL_NAME}
+
+- **Date**: YYYY-MM-DD HH:MM
+- **Task**: SFT / DPO / KTO / PPO / Pre-train / ...
+- **Environment**: Local / Remote EC2 (IP: x.x.x.x) / Distributed (N nodes)
+
+## Model & Dataset
+
+| Item | Value |
+|------|-------|
+| Model | `model_name_or_path` |
+| Dataset | `dataset_name` |
+| Method | LoRA / QLoRA / Full / Freeze / OFT |
+| Template | qwen3 / llama3 / ... |
+| LoRA Rank | (if applicable) |
+
+## YAML Config
+
+\`\`\`yaml
+FULL_YAML_CONTENT_HERE
+\`\`\`
+
+## Launch Command
+
+\`\`\`bash
+FULL_COMMAND_HERE
+\`\`\`
+
+## Key Parameters
+
+| Parameter | Value |
+|-----------|-------|
+| stage | sft |
+| finetuning_type | lora |
+| num_train_epochs | 3.0 |
+| learning_rate | 5e-5 |
+| per_device_train_batch_size | 8 |
+| cutoff_len | 2048 |
+| deepspeed | (config path if used) |
+| ... | ... |
+
+(Include all non-default parameters actually used.)
+
+## Hardware
+
+| Item | Value |
+|------|-------|
+| GPU | (model, count, VRAM) |
+| CUDA_VISIBLE_DEVICES | 0,1,2,3 |
+| FORCE_TORCHRUN | 1 (if used) |
+
+## Results
+
+| Metric | Value |
+|--------|-------|
+| Final train_loss | x.xxx |
+| Final eval_loss | x.xxx (if available) |
+| Training time | Xh Xm |
+| Output dir | `saves/model/lora/train_xxx` |
+
+## Summary
+
+(1-3 sentence summary: what was trained, key outcome, any issues encountered.)
+```
+
+Fill in all fields from the actual training run. Include the full YAML config content in the **YAML Config** section. If training failed, record the error in **Results** and note the failure in **Summary**. Omit sections that do not apply.
+
 ## Key YAML Parameters
 
 ### Model

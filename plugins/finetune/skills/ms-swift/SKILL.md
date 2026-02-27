@@ -196,6 +196,74 @@ Monitor with `tail -f train.log` or `nvidia-smi`.
 > scp -i PEM -r ubuntu@IP:~/output ./local_output
 > ```
 
+### 5. Save Training Record
+
+After training completes (or fails), save a training record as a markdown file in the working directory. Use the `Write` tool to create the file.
+
+**File name**: `training-record-YYYY-MM-DD-HHMMSS.md` (use the training start time)
+
+**Template**:
+
+```markdown
+# Training Record — {MODEL_NAME}
+
+- **Date**: YYYY-MM-DD HH:MM
+- **Task**: SFT / RLHF-GRPO / DPO / Pre-train / ...
+- **Environment**: Local / Remote EC2 (IP: x.x.x.x) / Distributed (N nodes)
+
+## Model & Dataset
+
+| Item | Value |
+|------|-------|
+| Model | `model_name_or_path` |
+| Dataset | `dataset_name_or_path` |
+| Method | LoRA / QLoRA / Full / Megatron |
+| LoRA Rank | (if applicable) |
+
+## Launch Command
+
+\`\`\`bash
+FULL_COMMAND_HERE
+\`\`\`
+
+## Key Parameters
+
+| Parameter | Value |
+|-----------|-------|
+| tuner_type | lora |
+| num_train_epochs | 3 |
+| learning_rate | 1e-4 |
+| per_device_train_batch_size | 1 |
+| max_length | 2048 |
+| deepspeed | zero2 |
+| ... | ... |
+
+(Include all non-default parameters actually used.)
+
+## Hardware
+
+| Item | Value |
+|------|-------|
+| GPU | (model, count, VRAM) |
+| CUDA_VISIBLE_DEVICES | 0,1,2,3 |
+| NPROC_PER_NODE | 4 |
+
+## Results
+
+| Metric | Value |
+|--------|-------|
+| Final train_loss | x.xxx |
+| Final eval_loss | x.xxx (if available) |
+| Training time | Xh Xm |
+| Output dir | `output/vX-XXXXXX/checkpoint-XXX` |
+
+## Summary
+
+(1-3 sentence summary: what was trained, key outcome, any issues encountered.)
+```
+
+Fill in all fields from the actual training run. If training failed, record the error in the **Results** section and note the failure in **Summary**. Omit sections that do not apply (e.g., no LoRA Rank for full fine-tuning).
+
 ## Megatron Training
 
 Megatron-SWIFT integrates NVIDIA Megatron-LM parallel technologies for high-performance training. **Use `megatron` instead of `swift` as the command prefix.** Recommended for MoE models (10x speedup) and large-scale multi-GPU training.
