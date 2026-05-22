@@ -1,12 +1,42 @@
 # LLM CC Market
 
-A Claude Code plugin marketplace for LLM fine-tuning and deployment workflows.
+A Claude Code plugin marketplace for LLM fine-tuning, deployment, and knowledge cultivation workflows.
 
 ## Overview
 
-LLM CC Market provides reusable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that simplify model fine-tuning, RLHF training, and deployment. It wraps production-grade frameworks behind guided workflows so you can go from raw data to a deployed model with natural language commands.
+LLM CC Market provides reusable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that simplify model fine-tuning, RLHF training, deployment, and domain knowledge management. It wraps production-grade frameworks behind guided workflows so you can go from raw data to a deployed model with natural language commands — and automatically accumulate domain expertise along the way.
 
 ## Available Plugins
+
+### cc-knowledge
+
+Auto-cultivate domain knowledge from your Claude Code sessions into a structured, searchable wiki.
+
+**What it does:** Automatically extracts lessons learned (error fixes, workflow discoveries, platform gotchas, architectural decisions) at the end of each substantive session and stores them in [llm-wiki](https://github.com/nvk/llm-wiki)-compatible format. Future sessions recall this knowledge via auto-generated skills — Claude gets progressively smarter about your specific domains.
+
+**Key features:**
+
+| Feature | Description |
+|---------|-------------|
+| Auto-trigger | SessionEnd hook fires after every qualifying session |
+| Smart gating | Only cultivates sessions with edits, errors, or corrections (≥8 messages) |
+| Per-domain topics | Knowledge classified into topics (ml-training, aws-infra, etc.) |
+| Recall skills | Per-topic skills auto-generated so Claude discovers past lessons |
+| Tiered autonomy | New lessons auto-apply; article modifications need review |
+| llm-wiki interop | Compatible format — install llm-wiki for compile/query/output |
+
+**Commands:**
+
+| Command | Description |
+|---------|-------------|
+| `/cc-knowledge:init` | Bootstrap the ~/wiki/ knowledge hub |
+| `/cc-knowledge:cultivate` | Manually extract lessons from current session |
+| `/cc-knowledge:review` | Accept/reject pending article modification proposals |
+| `/cc-knowledge:status` | Show cultivation dashboard (topics, counts, pending) |
+
+Documentation: [English](plugins/cc-knowledge/docs/README.md) | [中文](plugins/cc-knowledge/docs/README.zh-CN.md)
+
+---
 
 ### finetune
 
@@ -46,11 +76,12 @@ Fine-tune and deploy LLMs using [ms-swift](https://github.com/modelscope/ms-swif
 
 ## Installation
 
-Install the finetune plugin directly from GitHub:
+Install plugins directly from GitHub:
 
 ```bash
 /plugin marketplace add xiehust/llm-cc-market
 /plugin install finetune@llm-cc-market
+/plugin install cc-knowledge@llm-cc-market
 ```
 
 Or clone the repo and install locally:
@@ -58,6 +89,7 @@ Or clone the repo and install locally:
 ```bash
 git clone https://github.com/xiehust/llm-cc-market.git
 claude plugin add --from ./llm-cc-market/plugins/finetune
+claude plugin add --from ./llm-cc-market/plugins/cc-knowledge
 ```
 
 Then set up the training environment (choose one or both):
@@ -81,6 +113,14 @@ llm-cc-market/
 ├── .claude-plugin/
 │   └── marketplace.json              # Marketplace registry
 └── plugins/
+    ├── cc-knowledge/
+    │   ├── .claude-plugin/
+    │   │   └── plugin.json           # Plugin metadata
+    │   ├── hooks/hooks.json          # SessionEnd + SessionStart hooks
+    │   ├── commands/                 # init, cultivate, review, status
+    │   ├── skills/cultivator-engine/ # Extraction pipeline + references
+    │   ├── scripts/                  # Hook scripts + skill regen
+    │   └── docs/                     # README.md (EN) + README.zh-CN.md
     └── finetune/
         ├── .claude-plugin/
         │   └── plugin.json           # Plugin metadata
