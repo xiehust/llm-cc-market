@@ -8,6 +8,11 @@
       "name": "finetune",
       "source": "./plugins/finetune",
       "description": "Model finetune using ms-swift/megatron/llamafactory/etc"
+    },
+    {
+      "name": "cc-knowledge",
+      "source": "./plugins/cc-knowledge",
+      "description": "Auto-cultivate domain knowledge from Claude Code sessions into llm-wiki format"
     }
   ]
 }

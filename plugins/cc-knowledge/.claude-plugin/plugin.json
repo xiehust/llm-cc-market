@@ -1,0 +1,5 @@
+{
+  "name": "cc-knowledge",
+  "description": "Auto-cultivate domain knowledge from Claude Code sessions into llm-wiki format",
+  "version": "0.1.0"
+}
