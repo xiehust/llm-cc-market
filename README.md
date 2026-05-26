@@ -21,9 +21,12 @@ Auto-cultivate domain knowledge from your Claude Code sessions into a structured
 | Auto-trigger | SessionEnd hook fires after every qualifying session |
 | Smart gating | Only cultivates sessions with edits, errors, or corrections (≥8 messages) |
 | Per-domain topics | Knowledge classified into topics (ml-training, aws-infra, etc.) |
-| Recall skills | Per-topic skills auto-generated so Claude discovers past lessons |
+| Recall skills | Per-topic skills auto-generated, split into TECH (what to do) vs IMPROVEMENT (what failed) surfaces |
 | Tiered autonomy | New lessons auto-apply; article modifications need review |
+| Time-decay ranking | Older lessons de-prioritized in recall (full weight today, 50% at 90d, floor 10%); 365-day archive horizon |
+| Per-session cap | Hard cap of 7 lessons per session prevents activity-log noise |
 | llm-wiki interop | Compatible format — install llm-wiki for compile/query/output |
+| Blog publishing | Synthesize a topic into a deep-dive post and publish to GitHub Discussions |
 
 **Commands:**
 
@@ -33,6 +36,7 @@ Auto-cultivate domain knowledge from your Claude Code sessions into a structured
 | `/cc-knowledge:cultivate` | Manually extract lessons from current session |
 | `/cc-knowledge:review` | Accept/reject pending article modification proposals |
 | `/cc-knowledge:status` | Show cultivation dashboard (topics, counts, pending) |
+| `/cc-knowledge:blog` | Synthesize a topic into a long-form blog and publish to GitHub Discussions (first run preflight; default dry-run) |
 
 Documentation: [English](plugins/cc-knowledge/docs/README.md) | [中文](plugins/cc-knowledge/docs/README.zh-CN.md)
 
