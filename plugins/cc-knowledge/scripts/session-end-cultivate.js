@@ -73,7 +73,7 @@ async function main() {
       writeFile(markerPath, JSON.stringify(marker, null, 2));
 
       const prompt = buildExtractionPrompt(transcriptPath, topicHint, hubPath, markerPath);
-      const child = spawn(claudePath, ['-p', '--model', 'claude-haiku-4-5', prompt], {
+      const child = spawn(claudePath, ['-p', '--model', 'claude-opus-4-6[1m]', prompt], {
         detached: true,
         stdio: 'ignore',
         env: { ...process.env, CC_KNOWLEDGE_MARKER: markerPath }
