@@ -41,3 +41,4 @@ output/
 wandb/
 runs/
 *.log
+training-record-*.md
