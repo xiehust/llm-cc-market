@@ -26,15 +26,24 @@ Initialize the wiki hub for knowledge cultivation.
      ```json
      {
        "default": "<hub-path>",
-       "wikis": {}
+       "wikis": {
+         "hub": { "path": "<hub-path>", "description": "Hub" }
+       },
+       "local_wikis": []
      }
      ```
    - Create `<hub>/_index.md`:
      ```markdown
-     # Wiki Hub
+     # Wiki Hub Index
 
-     | Topic | Description | Lessons | Last Updated |
-     |-------|-------------|---------|--------------|
+     > Knowledge hub registry
+
+     Last updated: YYYY-MM-DD
+
+     ## Contents
+
+     | File | Summary | Tags | Updated |
+     |------|---------|------|---------|
      ```
    - Create `<hub>/log.md`:
      ```markdown

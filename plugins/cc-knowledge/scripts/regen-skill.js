@@ -26,14 +26,40 @@ function main() {
   }
 
   // Glob all .md note files (exclude _index.md)
-  const noteFiles = fs.readdirSync(notesDir)
+  // Performance cap: never scan more than MAX_NOTES_TO_SCAN files; archive horizon: skip notes older than ARCHIVE_DAYS
+  const MAX_NOTES_TO_SCAN = 100;
+  const ARCHIVE_DAYS = 365;
+  const cutoffMs = Date.now() - ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
+
+  const allNotes = fs.readdirSync(notesDir)
     .filter(f => f.endsWith('.md') && f !== '_index.md')
     .sort();
+
+  // Drop notes whose filename date is older than ARCHIVE_DAYS (effectively dormant per DDD lifecycle)
+  const liveNotes = allNotes.filter(f => {
+    const dateMatch = f.match(/^(\d{4}-\d{2}-\d{2})-/);
+    if (!dateMatch) return true; // keep if filename has no date
+    const fileMs = new Date(dateMatch[1]).getTime();
+    return Number.isFinite(fileMs) ? fileMs >= cutoffMs : true;
+  });
+
+  // Cap scan size: keep most recent MAX_NOTES_TO_SCAN
+  const noteFiles = liveNotes.slice(-MAX_NOTES_TO_SCAN);
 
   if (noteFiles.length === 0) {
     console.error('No lesson notes found');
     process.exit(0);
   }
+
+  // Per-file age in days, used for time-decay scoring
+  const today = Date.now();
+  const fileAges = noteFiles.map(f => {
+    const dateMatch = f.match(/^(\d{4}-\d{2}-\d{2})-/);
+    if (!dateMatch) return 0;
+    const fileMs = new Date(dateMatch[1]).getTime();
+    if (!Number.isFinite(fileMs)) return 0;
+    return Math.max(0, Math.floor((today - fileMs) / (24 * 60 * 60 * 1000)));
+  });
 
   // Extract rules and pitfalls from all notes
   const rules = [];
@@ -84,12 +110,19 @@ function main() {
   // Deduplicate rules
   const deduped = deduplicateRules(rules);
 
-  // Rank: frequency × 2 + recency
+  // Time-decay factor (DDD lifecycle: dormant after ~30 days, near-archived by ~90).
+  // Score = frequency × 2 × decay(age) + decay(age)
+  // decay(age) = max(0.1, 1 - ageDays / 180): full weight today, ~83% at 30d, ~50% at 90d, floor 10% past 162d.
+  function decay(ageDays) {
+    return Math.max(0.1, 1 - ageDays / 180);
+  }
+
   const ranked = deduped
-    .map(r => ({
-      ...r,
-      score: r.count * 2 + (r.fileIndex / noteFiles.length)
-    }))
+    .map(r => {
+      const age = fileAges[r.fileIndex] || 0;
+      const d = decay(age);
+      return { ...r, score: r.count * 2 * d + d };
+    })
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
 

@@ -178,6 +178,58 @@ The skill handles environment setup, command generation, hardware sizing, and da
 - Unsloth 加速集成（LoRA 训练提速 170%，内存减少 50%）
 - KTransformers 支持：2 张 4090 即可微调 DeepSeek-V3（671B）
 
+## How This Wiki Is Generated
+
+This wiki is built and maintained by two complementary Claude Code plugins:
+
+### [llm-wiki](https://github.com/xiehust/llm-cc-market/tree/main/plugins/llm-wiki) — Research & Knowledge Management
+
+The primary plugin for deliberate research and knowledge curation. It provides a full lifecycle for turning raw information into structured, interlinked wiki articles:
+
+- **Ingest** (`/wiki:ingest`) — Fetch and store web articles, papers, repos, or notes as immutable raw sources with structured frontmatter
+- **Compile** (`/wiki:compile`) — Synthesize raw sources into wiki articles (concepts, topics, references) with source provenance tracking
+- **Research** (`/wiki:research`) — Run multi-agent research sessions that discover, ingest, and compile sources in one pass
+- **Query** (`/wiki:query`) — Search and synthesize answers from the knowledge base
+- **Lint** (`/wiki:lint --fix`) — Health checks, schema migration, index regeneration, and structural repair
+- **Output** (`/wiki:output`) — Generate reports, guides, and comparisons from compiled knowledge
+
+### [cc-knowledge](https://github.com/xiehust/llm-cc-market/tree/main/plugins/cc-knowledge) — Passive Lesson Extraction
+
+A lightweight companion that passively captures development lessons from everyday Claude Code sessions. While `llm-wiki` requires deliberate research actions, `cc-knowledge` works in the background:
+
+- **Auto-extraction** — At session end, identifies reusable patterns, gotchas, and operational lessons from the conversation
+- **Lesson format** — Captures each lesson with category, context, root cause, fix, and a memorable rule
+- **Topic routing** — Routes extracted lessons to the appropriate wiki topic (e.g., the `general` topic was created entirely from a single development session's lessons)
+- **Manual trigger** (`/cc-knowledge:cultivate`) — Extract lessons mid-session without waiting for auto-fire
+
+### Workflow
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Deliberate Research (llm-wiki)                     │
+│  /wiki:research "topic" → ingest → compile → wiki/ │
+└─────────────────────────────────────────────────────┘
+                        ↓ articles
+┌─────────────────────────────────────────────────────┐
+│  Wiki Hub (this repo)                               │
+│  raw/ → wiki/ → output/                            │
+└─────────────────────────────────────────────────────┘
+                        ↑ lessons
+┌─────────────────────────────────────────────────────┐
+│  Passive Extraction (cc-knowledge)                  │
+│  dev session → auto-extract → raw/notes/            │
+└─────────────────────────────────────────────────────┘
+```
+
+## Usage
+
+This wiki is designed to be queried and maintained via Claude Code with the `llm-wiki` plugin:
+
+- `/wiki:query "question"` — search and synthesize answers
+- `/wiki:ingest <url>` — ingest a new source
+- `/wiki:compile` — compile raw sources into wiki articles
+- `/wiki:lint --fix` — health checks and auto-repair
+
 ## License
 
 See individual plugin directories for license details.

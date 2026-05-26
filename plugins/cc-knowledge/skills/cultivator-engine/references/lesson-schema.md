@@ -11,21 +11,20 @@
 ```yaml
 ---
 title: "Lessons Learned: <session topic>"
-type: lessons-learned
-source: session
-date: YYYY-MM-DD
+source: "session"
+type: notes
+ingested: YYYY-MM-DD
 tags: [lessons-learned, <domain-tag>, <technology-tags>]
 lesson_count: N
-category: notes
 confidence: high
 summary: "<one-line summary of what was learned>"
 ---
 ```
 
 **Field rules:**
-- `type`: always `lessons-learned`
-- `source`: always `session`
-- `date`: ISO date of extraction
+- `type`: always `notes` (matches the `raw/notes/` directory per llm-wiki convention)
+- `source`: always `"session"` (origin of the material)
+- `ingested`: ISO date of extraction (llm-wiki canonical date field for raw sources)
 - `tags`: always include `lessons-learned`; add 2-4 domain/tech tags
 - `lesson_count`: integer count of lessons in the file
 - `confidence`: always `high` (these are first-hand experience)

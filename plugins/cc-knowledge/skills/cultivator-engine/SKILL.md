@@ -56,8 +56,8 @@ For each identified event, produce a structured lesson:
 3. If a good existing topic matches → use it
 4. If no match → create a new topic:
    - Create `~/wiki/topics/<slug>/` with subdirectories: `raw/notes/`, `wiki/concepts/`, `wiki/topics/`, `wiki/references/`, `proposals/`
-   - Create `_index.md`, `config.md`, `log.md`
-   - Update `~/wiki/wikis.json` to register the new topic
+   - Create `_index.md` (with Contents table), `config.md`, `log.md`
+   - Update `~/wiki/wikis.json` to register the new topic (include `"hub"` entry and `"local_wikis": []`)
    - Update `~/wiki/_index.md`
 
 ### Stage 4: Tiered Write

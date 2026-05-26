@@ -18,12 +18,14 @@
 {
   "default": "~/wiki",
   "wikis": {
+    "hub": { "path": "~/wiki", "description": "Hub" },
     "<topic-slug>": {
       "path": "topics/<topic-slug>",
       "description": "<one-line description of the domain>",
       "status": "active"
     }
-  }
+  },
+  "local_wikis": []
 }
 ```
 
@@ -48,23 +50,28 @@ topics/<topic>/
 ## _index.md Format (Topic Level)
 
 ```markdown
-# <Topic Name>
+# <Topic Name> Index
 
 > <One-line description>
 
 Last updated: YYYY-MM-DD
 
-## Stats
+## Statistics
 
-- **Lessons**: N raw notes
-- **Articles**: M compiled
+- **Raw sources**: N notes
+- **Wiki articles**: M compiled
 - **Proposals**: P pending
 
-## Recent Activity
+## Contents
 
-| Date | Action | File |
-|------|--------|------|
-| YYYY-MM-DD | ll | raw/notes/YYYY-MM-DD-ll-<slug>.md |
+| File | Summary | Tags | Updated |
+|------|---------|------|---------|
+| [raw/](raw/) | Raw source material | | YYYY-MM-DD |
+| [wiki/](wiki/) | Compiled articles | | YYYY-MM-DD |
+
+## Recent Changes
+
+- YYYY-MM-DD: ll — extracted N lessons from session
 ```
 
 ## raw/notes/_index.md Format
@@ -72,9 +79,15 @@ Last updated: YYYY-MM-DD
 ```markdown
 # Raw Notes Index
 
-| File | Date | Lessons | Summary |
-|------|------|---------|---------|
-| [YYYY-MM-DD-ll-<slug>.md](YYYY-MM-DD-ll-<slug>.md) | YYYY-MM-DD | N | <summary> |
+> Lesson notes extracted from Claude Code sessions
+
+Last updated: YYYY-MM-DD
+
+## Contents
+
+| File | Summary | Tags | Updated |
+|------|---------|------|---------|
+| [YYYY-MM-DD-ll-<slug>.md](YYYY-MM-DD-ll-<slug>.md) | <summary> (N lessons) | lessons-learned, <tags> | YYYY-MM-DD |
 ```
 
 ## config.md Format
@@ -99,11 +112,21 @@ Last updated: YYYY-MM-DD
 ## Hub _index.md Format
 
 ```markdown
-# Wiki Hub
+# Wiki Hub Index
 
-| Topic | Description | Lessons | Last Updated |
-|-------|-------------|---------|--------------|
-| [<topic>](topics/<topic>/_index.md) | <description> | N | YYYY-MM-DD |
+> Knowledge hub registry
+
+Last updated: YYYY-MM-DD
+
+## Contents
+
+| File | Summary | Tags | Updated |
+|------|---------|------|---------|
+| [<topic>](topics/<topic>/_index.md) | <description> | <tags> | YYYY-MM-DD |
+
+## Recent Changes
+
+- YYYY-MM-DD: Description
 ```
 
 ## Dual-Link Format

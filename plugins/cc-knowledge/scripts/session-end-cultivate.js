@@ -18,6 +18,7 @@ const {
 } = require('./lib/utils');
 
 const MIN_MESSAGES = 8;
+const MAX_LESSONS_PER_SESSION = 7;
 
 async function main() {
   const transcriptPath = process.env.CLAUDE_TRANSCRIPT_PATH;
@@ -176,8 +177,9 @@ Follow the lesson extraction process:
 1. Find error→fix patterns, user corrections, discoveries, gotchas
 2. Structure each as: Category (gotcha|pattern|rule|discovery|correction), Context, Symptom, Root cause, Fix, Rule
 3. Write to ${hubPath}/topics/<appropriate-topic>/raw/notes/${getDateString()}-ll-${slugify(topicHint)}.md
-4. Use llm-wiki frontmatter format (type: lessons-learned, source: session, tags, confidence: high)
-5. Target 2-7 lessons. Be specific with error messages and file paths.`;
+4. Use llm-wiki frontmatter format (type: notes, source: "session", ingested: YYYY-MM-DD, tags, confidence: high)
+5. HARD CAP: emit at most ${MAX_LESSONS_PER_SESSION} lessons. If you find more candidates, keep only the highest-judgment-value ones (filter: "does this help future Agent decide better?"). Discard activity-log style entries.
+6. Be specific with error messages and file paths.`;
 }
 
 main().catch(err => {
