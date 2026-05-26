@@ -36,6 +36,9 @@ desktop.ini
 *.swo
 *~
 
+# Submodules / local clones
+llm-wiki/
+
 # ms-swift outputs
 output/
 wandb/
