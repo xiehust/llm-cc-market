@@ -82,16 +82,22 @@ function main() {
       tagMatch[1].split(',').map(t => t.trim()).forEach(t => allTags.add(t));
     }
 
-    // Extract rules
-    const ruleMatches = content.matchAll(/^\*\*Rule\*\*:\s*(.+)$/gm);
-    for (const m of ruleMatches) {
-      rules.push({ text: m[1].trim(), fileIndex: i, file: noteFiles[i] });
-    }
-
-    // Extract pitfalls (gotcha category entries)
+    // Walk lesson sections; capture category + rule together so we can route by judgment dimension
     const sections = content.split(/^## Lesson \d+/m).slice(1);
     for (const section of sections) {
-      if (/\*\*Category\*\*:\s*gotcha/i.test(section)) {
+      const catMatch = section.match(/\*\*Category\*\*:\s*([a-zA-Z]+)/);
+      const ruleMatch = section.match(/\*\*Rule\*\*:\s*(.+)/);
+      const category = catMatch ? catMatch[1].trim().toLowerCase() : '';
+      if (ruleMatch) {
+        rules.push({
+          text: ruleMatch[1].trim(),
+          category,
+          fileIndex: i,
+          file: noteFiles[i]
+        });
+      }
+
+      if (category === 'gotcha') {
         const symptom = section.match(/\*\*Symptom\*\*:\s*(.+)/);
         const rootCause = section.match(/\*\*Root cause\*\*:\s*(.+)/);
         const fix = section.match(/\*\*Fix\*\*:\s*(.+)/);
@@ -105,6 +111,15 @@ function main() {
         }
       }
     }
+  }
+
+  // Map lesson category to DDD-style judgment dimension.
+  // tech: pattern/rule/discovery — what to do (TECH visit)
+  // improvement: gotcha/correction — what failed before (IMPROVEMENT visit)
+  function judgmentDim(category) {
+    const c = (category || '').toLowerCase();
+    if (c === 'gotcha' || c === 'correction') return 'improvement';
+    return 'tech';
   }
 
   // Deduplicate rules
@@ -155,12 +170,35 @@ description: "${description.replace(/"/g, '\\"')}"
 
 ${totalLessons} lessons across ${noteFiles.length} sessions. Last cultivated: ${lastDate}.
 
-## Top Rules
-
 `;
 
-  for (let i = 0; i < ranked.length; i++) {
-    skillContent += `${i + 1}. ${ranked[i].text}\n`;
+  // Partition by judgment dimension (DDD-style): tech (what to do) vs improvement (what failed before)
+  const techRules = ranked.filter(r => judgmentDim(r.category) === 'tech');
+  const improvementRules = ranked.filter(r => judgmentDim(r.category) === 'improvement');
+
+  if (techRules.length > 0) {
+    skillContent += `## What to Do (TECH)\n\n`;
+    techRules.forEach((r, idx) => {
+      skillContent += `${idx + 1}. ${r.text}\n`;
+    });
+    skillContent += `\n`;
+  }
+
+  if (improvementRules.length > 0) {
+    skillContent += `## What Failed Before (IMPROVEMENT)\n\n`;
+    improvementRules.forEach((r, idx) => {
+      skillContent += `${idx + 1}. ${r.text}\n`;
+    });
+    skillContent += `\n`;
+  }
+
+  // Fallback: if neither bucket has content (unusual — happens only with no Category fields), list everything
+  if (techRules.length === 0 && improvementRules.length === 0 && ranked.length > 0) {
+    skillContent += `## Top Rules\n\n`;
+    ranked.forEach((r, idx) => {
+      skillContent += `${idx + 1}. ${r.text}\n`;
+    });
+    skillContent += `\n`;
   }
 
   if (topPitfalls.length > 0) {
@@ -201,7 +239,10 @@ function deduplicateRules(rules) {
       const groupNorm = group.normalized;
       if (normalized.includes(groupNorm) || groupNorm.includes(normalized)) {
         group.count++;
-        group.fileIndex = Math.max(group.fileIndex, rule.fileIndex);
+        if (rule.fileIndex > group.fileIndex) {
+          group.fileIndex = rule.fileIndex;
+          group.category = rule.category; // adopt the freshest occurrence's category
+        }
         if (rule.text.length > group.text.length) {
           group.text = rule.text;
           group.normalized = normalized;
@@ -211,7 +252,13 @@ function deduplicateRules(rules) {
       }
     }
     if (!found) {
-      groups.push({ text: rule.text, normalized, count: 1, fileIndex: rule.fileIndex });
+      groups.push({
+        text: rule.text,
+        normalized,
+        count: 1,
+        fileIndex: rule.fileIndex,
+        category: rule.category
+      });
     }
   }
   return groups;

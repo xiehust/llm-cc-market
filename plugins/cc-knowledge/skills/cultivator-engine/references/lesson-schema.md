@@ -52,13 +52,20 @@ summary: "<one-line summary of what was learned>"
 
 ## Category Definitions
 
-| Category | When to use |
-|---|---|
-| `gotcha` | Platform/tool quirk that trips people up |
-| `pattern` | A reusable approach that proved effective |
-| `rule` | A constraint or invariant to always follow |
-| `discovery` | Something non-obvious that was learned |
-| `correction` | User corrected the AI's approach |
+| Category | When to use | Judgment dim |
+|---|---|---|
+| `gotcha` | Platform/tool quirk that trips people up | improvement |
+| `pattern` | A reusable approach that proved effective | tech |
+| `rule` | A constraint or invariant to always follow | tech |
+| `discovery` | Something non-obvious that was learned | tech |
+| `correction` | User corrected the AI's approach | improvement |
+
+**Judgment dimension** (DDD-aligned): the recall skill regenerator partitions lessons by Category into two surfaces:
+
+- **TECH** — `pattern` / `rule` / `discovery` → "What to do" (helps Agent decide *how* to act)
+- **IMPROVEMENT** — `gotcha` / `correction` → "What failed before" (helps Agent avoid past failures)
+
+Pick Category accurately at extraction time — it drives downstream presentation. If a lesson teaches both ("here's the pattern, here's what trips you up"), prefer two separate lessons over one with mixed Category.
 
 ## Quality Criteria
 
