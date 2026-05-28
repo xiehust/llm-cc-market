@@ -13,18 +13,24 @@ const {
   writeFile,
   getPendingDir,
   getDateString,
-  slugify,
   log
 } = require('./lib/utils');
 
 const MIN_MESSAGES = 8;
-const MAX_LESSONS_PER_SESSION = 7;
+const MAX_LESSONS_PER_SESSION = 5;
+const TOMBSTONE_TTL_DAYS = 7;
 
 async function main() {
   const transcriptPath = process.env.CLAUDE_TRANSCRIPT_PATH;
   const sessionId = process.env.CLAUDE_SESSION_ID || 'unknown';
 
   if (!transcriptPath || !fs.existsSync(transcriptPath)) {
+    process.exit(0);
+  }
+
+  // Per-session dedup: skip if this session was cultivated in the last N days
+  if (isSessionRecentlyProcessed(sessionId)) {
+    log(`[cc-knowledge] Session ${sessionId.slice(-12)} already cultivated within ${TOMBSTONE_TTL_DAYS}d — skipping`);
     process.exit(0);
   }
 
@@ -42,7 +48,6 @@ async function main() {
     process.exit(0);
   }
 
-  // Gate passed — extract topic hint from transcript
   const topicHint = extractTopicHint(transcriptPath);
   const hubPath = getWikiHub();
 
@@ -73,15 +78,24 @@ async function main() {
       marker.status = 'spawned';
       writeFile(markerPath, JSON.stringify(marker, null, 2));
 
-      const prompt = buildExtractionPrompt(transcriptPath, topicHint, hubPath, markerPath);
-      const child = spawn(claudePath, ['-p', '--model', 'claude-opus-4-6[1m]', prompt], {
-        detached: true,
-        stdio: 'ignore',
-        env: { ...process.env, CC_KNOWLEDGE_MARKER: markerPath }
-      });
+      // Stamp tombstone before spawn — prevents re-fire even if the cultivator silently exits.
+      // Cultivator deletes the marker on success; we keep the tombstone separately.
+      writeSessionTombstone(sessionId);
+
+      const prompt = buildExtractionPrompt(hubPath, markerPath, topicHint);
+      // Use --resume to inherit full session context (avoids passing a lossy excerpt).
+      const child = spawn(
+        claudePath,
+        ['-p', '--resume', sessionId, '--model', 'claude-opus-4-6[1m]', prompt],
+        {
+          detached: true,
+          stdio: 'ignore',
+          env: { ...process.env, CC_KNOWLEDGE_MARKER: markerPath }
+        }
+      );
       child.unref();
 
-      log(`[cc-knowledge] Spawned cultivator (pid ${child.pid})`);
+      log(`[cc-knowledge] Spawned cultivator (pid ${child.pid}) — resumed session ${sessionId.slice(-12)}`);
       process.exit(0);
     }
   }
@@ -91,6 +105,33 @@ async function main() {
   writeFile(markerPath, JSON.stringify(marker, null, 2));
   log('[cc-knowledge] Cultivation deferred — run /cc-knowledge:cultivate next session');
   process.exit(0);
+}
+
+function getTombstoneDir() {
+  return path.join(getPendingDir(), 'processed-sessions');
+}
+
+function isSessionRecentlyProcessed(sessionId) {
+  if (!sessionId || sessionId === 'unknown') return false;
+  const tombstone = path.join(getTombstoneDir(), `${sessionId}.json`);
+  if (!fs.existsSync(tombstone)) return false;
+  try {
+    const stat = fs.statSync(tombstone);
+    const ageMs = Date.now() - stat.mtimeMs;
+    return ageMs < TOMBSTONE_TTL_DAYS * 24 * 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
+
+function writeSessionTombstone(sessionId) {
+  if (!sessionId || sessionId === 'unknown') return;
+  const dir = getTombstoneDir();
+  ensureDir(dir);
+  writeFile(
+    path.join(dir, `${sessionId}.json`),
+    JSON.stringify({ sessionId, processedAt: new Date().toISOString() }, null, 2)
+  );
 }
 
 function extractTopicHint(transcriptPath) {
@@ -142,44 +183,62 @@ function getHomeDir() {
   return require('os').homedir();
 }
 
-function buildExtractionPrompt(transcriptPath, topicHint, hubPath, markerPath) {
-  const excerptLines = [];
-  try {
-    const content = fs.readFileSync(transcriptPath, 'utf8');
-    const lines = content.split('\n').filter(Boolean);
-    const recent = lines.slice(-60);
-    for (const line of recent) {
-      try {
-        const entry = JSON.parse(line);
-        if (entry.type === 'user' || entry.type === 'assistant') {
-          const text = typeof entry.content === 'string'
-            ? entry.content
-            : (Array.isArray(entry.content) ? entry.content.filter(b => b.type === 'text').map(b => b.text).join('\n') : '');
-          if (text.length > 0) {
-            excerptLines.push(`[${entry.type}]: ${text.slice(0, 500)}`);
-          }
-        }
-      } catch {}
-    }
-  } catch {}
+function buildExtractionPrompt(hubPath, markerPath, topicHint) {
+  const date = getDateString();
+  return `You are extracting durable lessons from this Claude Code session.
+The full session transcript is loaded as your context (you've been resumed into it) — do NOT ask for an excerpt.
 
-  const excerpt = excerptLines.slice(-30).join('\n\n');
-  return `Extract lessons from this Claude Code session and write them to the wiki at ${hubPath}.
-Topic hint: "${topicHint}"
-After writing, delete the marker file at: ${markerPath}
+Hub: ${hubPath}
+Marker to delete on exit: ${markerPath}
+Topic hint (advisory only): "${topicHint}"
+Today: ${date}
 
-Session transcript excerpt:
----
-${excerpt}
----
+# Hard rules — disobeying any of these wastes the user's wiki
 
-Follow the lesson extraction process:
-1. Find error→fix patterns, user corrections, discoveries, gotchas
-2. Structure each as: Category (gotcha|pattern|rule|discovery|correction), Context, Symptom, Root cause, Fix, Rule
-3. Write to ${hubPath}/topics/<appropriate-topic>/raw/notes/${getDateString()}-ll-${slugify(topicHint)}.md
-4. Use llm-wiki frontmatter format (type: notes, source: "session", ingested: YYYY-MM-DD, tags, confidence: high)
-5. HARD CAP: emit at most ${MAX_LESSONS_PER_SESSION} lessons. If you find more candidates, keep only the highest-judgment-value ones (filter: "does this help future Agent decide better?"). Discard activity-log style entries.
-6. Be specific with error messages and file paths.`;
+## Rule 0 — Default is "write nothing"
+
+If <2 lessons survive the filters below, **delete the marker and exit silently. Write no file.**
+Do NOT write a "no new lessons" / "dedup" / "re-confirmed" meta-note. Those notes are themselves the problem we are fixing — they pollute the wiki and trigger false dedup loops on future runs.
+
+## Rule 1 — A lesson must be DURABLE
+
+A candidate qualifies as a lesson only if ALL hold:
+- Encodes a non-obvious rule, gotcha, or pattern future-you would want to remember
+- Generalizes beyond this specific project / file / branch
+- Has a concrete failure mode, surprising behavior, or non-trivial design tradeoff at its core
+
+Reject categorically:
+- Activity summaries / "what we did today" / progress reports
+- Meta-notes about extraction state (dedup notes, "no new lessons", re-confirmation logs)
+- Project-internal trivia ("file X needs flag Y in repo Z") with no transferable rule
+- Things obvious from reading the code or framework's own docs
+- Successful happy-path narratives without a surprising step
+
+## Rule 2 — Dedup against existing notes
+
+Before writing, list ${hubPath}/topics/*/raw/notes/ files modified in the last 14 days and skim their Rule lines and titles. For each candidate lesson, drop it if its Rule line is already covered (even with different wording). If all candidates are duplicates → exit silently per Rule 0.
+
+## Rule 3 — Topic targeting (no lazy "general")
+
+1. Read ${hubPath}/wikis.json to enumerate topics.
+2. Pick the most specific topic whose description matches the lesson's domain.
+3. Use "general" ONLY if the lesson is genuinely cross-domain AND no specific topic fits. When torn between specific and general, choose specific.
+4. If no topic fits and the lesson is high-value enough to justify a new topic, create one (see ${hubPath}/AGENTS.md or follow the cultivator-engine skill).
+
+## Rule 4 — Cap and shape
+
+- Max ${MAX_LESSONS_PER_SESSION} lessons per session. Quality over quantity — 2 sharp lessons beat 5 mushy ones.
+- Each lesson body: Category (gotcha|pattern|rule|discovery|correction), Context, Symptom, Root cause, Fix, Rule (one generalizable sentence).
+- Be specific: include exact error strings, file paths, tool/library names, version numbers when relevant.
+
+# Workflow
+
+1. Scan the resumed session for error→fix sequences, user corrections, gotchas, undocumented behaviors.
+2. Apply Rules 1–4 (durable filter → dedup → topic selection).
+3. If <2 lessons survive → delete ${markerPath} and exit silently. STOP.
+4. Otherwise: pick the chosen topic, write to ${hubPath}/topics/<chosen-topic>/raw/notes/${date}-ll-<descriptive-slug>.md with llm-wiki frontmatter (type: notes, source: "session", ingested: ${date}, tags: [...specific tags], confidence: high, summary: <one sentence>).
+5. Update the topic's raw/notes/_index.md (add a row) and log.md (one line).
+6. Delete ${markerPath}.`;
 }
 
 main().catch(err => {
