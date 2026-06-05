@@ -58,6 +58,12 @@ The viewer reads `WIKI_HUB_PATH`, then `~/.config/llm-wiki/config.json`
 server and use the pixel-art shelf interface to browse topics, search markdown,
 and read raw notes or compiled wiki articles.
 
+The viewer also includes a runtime knowledge graph. Graph view inspects
+document, topic, tag, source, and link relationships derived from indexed
+Markdown. This first version builds the graph in memory from the wiki index,
+and the API returns stable nodes and edges so a future SQLite-backed
+implementation can preserve the same shape.
+
 ---
 
 ### finetune
