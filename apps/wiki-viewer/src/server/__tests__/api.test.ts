@@ -93,6 +93,10 @@ describe('API routes', () => {
       expect(documentOnlyGraph.nodes.length).toBeGreaterThan(0);
       expect(documentOnlyGraph.nodes.every((node: { type: string }) => node.type === 'document')).toBe(true);
 
+      const tagEdgeGraph = await fetch(`${baseUrl}/api/graph?edgeTypes=has_tag`).then((res) => res.json());
+      expect(tagEdgeGraph.edges.length).toBeGreaterThan(0);
+      expect(tagEdgeGraph.edges.every((edge: { type: string }) => edge.type === 'has_tag')).toBe(true);
+
       const missing = await fetch(`${baseUrl}/api/topics/missing-topic`);
       expect(missing.status).toBe(404);
 
