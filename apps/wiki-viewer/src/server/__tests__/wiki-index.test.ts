@@ -176,6 +176,27 @@ title: [broken
     expect(index.status.warnings.some((warning) => warning.includes('failed to read markdown file'))).toBe(true);
   });
 
+  it('continues indexing the topic when a nested markdown directory cannot be read', async () => {
+    const hubPath = await createTempFixtureWiki();
+    const unreadableDir = join(hubPath, 'topics', 'ml-training', 'wiki', 'concepts', 'private');
+    await mkdir(unreadableDir, { recursive: true });
+    await writeFile(join(unreadableDir, 'secret.md'), '# Secret\n', 'utf8');
+    await chmod(unreadableDir, 0o000);
+
+    let index: Awaited<ReturnType<typeof buildWikiIndex>>;
+    try {
+      index = await buildWikiIndex(hubPath);
+    } finally {
+      await chmod(unreadableDir, 0o700).catch(() => undefined);
+    }
+
+    expect(index.status.ready).toBe(true);
+    expect(index.documents.some((doc) => doc.relativePath.endsWith('cuda-packages.md'))).toBe(true);
+    expect(index.documents.some((doc) => doc.relativePath.endsWith('secret.md'))).toBe(false);
+    expect(index.status.warnings.some((warning) => warning.includes('failed to read directory'))).toBe(true);
+    expect(index.status.warnings.some((warning) => warning.includes('topics/ml-training/wiki/concepts/private'))).toBe(true);
+  });
+
   it('classifies documents from the topic-relative path when the topic slug matches a content bucket', async () => {
     const root = await mkdtemp(join(tmpdir(), 'wiki-index-'));
     tmpRoots.push(root);

@@ -44,16 +44,23 @@ async function isDirectory(path: string): Promise<boolean> {
   }
 }
 
-async function walkMarkdown(dir: string): Promise<string[]> {
+async function walkMarkdown(dir: string, warningRoot: string, warnings: string[]): Promise<string[]> {
   if (!(await isDirectory(dir))) return [];
 
-  const entries = await readdir(dir, { withFileTypes: true });
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch (error) {
+    warnings.push(`failed to read directory ${relative(warningRoot, dir) || '.'}: ${(error as Error).message}`);
+    return [];
+  }
+
   const nested = await Promise.all(
     entries
       .sort((left, right) => left.name.localeCompare(right.name))
       .map(async (entry) => {
         const fullPath = join(dir, entry.name);
-        if (entry.isDirectory()) return walkMarkdown(fullPath);
+        if (entry.isDirectory()) return walkMarkdown(fullPath, warningRoot, warnings);
         if (entry.isFile() && entry.name.endsWith('.md')) return [fullPath];
         return [];
       }),
@@ -245,7 +252,7 @@ export async function buildWikiIndex(hubPath: string, options: BuildOptions = {}
     const counts = emptyCounts();
     const topicDocuments: WikiDocument[] = [];
 
-    for (const filePath of await walkMarkdown(absolutePath)) {
+    for (const filePath of await walkMarkdown(absolutePath, hubPath, warnings)) {
       const relativePath = relative(hubPath, filePath);
       const topicRelativePath = relative(absolutePath, filePath);
       let content: string;
