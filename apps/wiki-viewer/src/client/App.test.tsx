@@ -273,6 +273,65 @@ describe('App', () => {
     expect(screen.getByLabelText('Search wiki')).toHaveValue('');
   });
 
+  it('keeps results cleared when a blank search invalidates a pending search', async () => {
+    const pendingSearch = createDeferred<Response>();
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const textUrl = String(url);
+      if (textUrl.includes('/api/status')) {
+        return Response.json({ ready: true, hubPath: '/tmp/wiki', warnings: [], topicCount: 1, documentCount: 1 });
+      }
+      if (textUrl.includes('/api/topics')) {
+        return Response.json([
+          {
+            slug: 'ml-training',
+            description: 'Training lessons',
+            archived: false,
+            counts: { raw: 1, wiki: 0, proposals: 0, inventory: 0, output: 0, total: 1 },
+          },
+        ]);
+      }
+      if (textUrl.includes('/api/search') && textUrl.includes('q=slow')) {
+        return pendingSearch.promise;
+      }
+      return Response.json({});
+    }) as typeof fetch;
+
+    render(<App />);
+
+    const search = await screen.findByLabelText('Search wiki');
+    fireEvent.change(search, { target: { value: 'slow' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    expect(await screen.findByRole('button', { name: 'Searching' })).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: '   ' } });
+    fireEvent.submit(search.closest('form') as HTMLFormElement);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument());
+    pendingSearch.resolve(
+      Response.json({
+        results: [
+          {
+            id: 'ml-training/raw/notes/slow.md',
+            topic: 'ml-training',
+            relativePath: 'raw/notes/slow.md',
+            kind: 'raw',
+            title: 'Slow stale note',
+            tags: [],
+            dates: {},
+            archived: false,
+            warnings: [],
+            score: 8,
+            snippet: 'This response should be ignored.',
+          },
+        ],
+      }),
+    );
+
+    await waitFor(() => expect(screen.queryByText('Slow stale note')).not.toBeInTheDocument());
+    expect(screen.queryByText('No matching documents found.')).not.toBeInTheDocument();
+  });
+
   it('renders an API load error instead of setup guidance when status cannot load', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('API offline'));
 

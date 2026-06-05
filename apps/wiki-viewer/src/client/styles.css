@@ -103,6 +103,14 @@ code {
   accent-color: #2f7d57;
 }
 
+.archive-toggle:focus-within {
+  outline: 4px solid #fff24a;
+  outline-offset: 5px;
+  box-shadow:
+    4px 4px 0 #211a18,
+    0 0 0 9px #1f5fbf;
+}
+
 .warning-strip {
   display: grid;
   gap: 8px;
@@ -141,6 +149,16 @@ code {
   box-shadow: 3px 3px 0 #211a18 inset;
 }
 
+.search-controls input:focus-visible,
+.search-controls select:focus-visible,
+.archive-toggle input:focus-visible {
+  outline: 4px solid #fff24a;
+  outline-offset: 4px;
+  box-shadow:
+    3px 3px 0 #211a18 inset,
+    0 0 0 7px #1f5fbf;
+}
+
 .pixel-button {
   min-height: 42px;
   border: 3px solid #211a18;
@@ -155,6 +173,16 @@ code {
 .pixel-button:hover {
   transform: translate(1px, 1px);
   box-shadow: 3px 3px 0 #211a18;
+}
+
+.pixel-button:focus-visible,
+.topic-book:focus-visible,
+.document-card:focus-visible {
+  outline: 4px solid #fff24a;
+  outline-offset: 5px;
+  box-shadow:
+    6px 6px 0 #211a18,
+    0 0 0 9px #1f5fbf;
 }
 
 .pixel-button:disabled {

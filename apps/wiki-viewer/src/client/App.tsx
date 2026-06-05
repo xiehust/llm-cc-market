@@ -50,6 +50,10 @@ export default function App() {
   }, [includeArchived]);
 
   const visibleTopics = useMemo(() => topics ?? [], [topics]);
+  const displayedTopicCount = includeArchived ? visibleTopics.length : (status?.topicCount ?? visibleTopics.length);
+  const displayedDocumentCount = includeArchived
+    ? visibleTopics.reduce((total, topic) => total + topic.counts.total, 0)
+    : (status?.documentCount ?? visibleTopics.reduce((total, topic) => total + topic.counts.total, 0));
 
   function openTopic(slug: string) {
     setView({ name: 'topic', slug });
@@ -96,7 +100,7 @@ export default function App() {
           <p className="eyebrow">Local llm-wiki archive</p>
           <h1>LLM Wiki Shelf</h1>
           <p className="header-meta">
-            {status.topicCount ?? visibleTopics.length} topics / {status.documentCount ?? 0} documents
+            {displayedTopicCount} topics / {displayedDocumentCount} documents
           </p>
         </div>
         <label className="archive-toggle">

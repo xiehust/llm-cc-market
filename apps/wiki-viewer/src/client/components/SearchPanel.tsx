@@ -47,8 +47,13 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
 
   async function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!query.trim()) {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+      searchRequest.current += 1;
+      setQuery('');
       setResults([]);
+      setLoading(false);
+      setError(null);
       setSearched(false);
       return;
     }
@@ -58,7 +63,7 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
     setSearched(true);
     const requestId = ++searchRequest.current;
     try {
-      const response = await searchWiki(query.trim(), includeArchived, topic || undefined);
+      const response = await searchWiki(trimmedQuery, includeArchived, topic || undefined);
       if (searchRequest.current === requestId) setResults(response.results ?? []);
     } catch (err) {
       if (searchRequest.current === requestId) {

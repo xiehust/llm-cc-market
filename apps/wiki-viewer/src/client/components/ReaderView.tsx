@@ -23,6 +23,7 @@ export default function ReaderView({ documentId, onBack }: ReaderViewProps) {
   const requestId = useRef(0);
 
   useEffect(() => {
+    let active = true;
     const controller = new AbortController();
     const currentRequest = ++requestId.current;
     setDocument(null);
@@ -30,17 +31,18 @@ export default function ReaderView({ documentId, onBack }: ReaderViewProps) {
     setError(null);
     getDocument(documentId, controller.signal)
       .then((detail) => {
-        if (requestId.current === currentRequest) setDocument(detail);
+        if (active && requestId.current === currentRequest) setDocument(detail);
       })
       .catch((err) => {
-        if (controller.signal.aborted || requestId.current !== currentRequest) return;
+        if (!active || controller.signal.aborted || requestId.current !== currentRequest) return;
         setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => {
-        if (requestId.current === currentRequest) setLoading(false);
+        if (active && !controller.signal.aborted && requestId.current === currentRequest) setLoading(false);
       });
 
     return () => {
+      active = false;
       controller.abort();
     };
   }, [documentId]);
