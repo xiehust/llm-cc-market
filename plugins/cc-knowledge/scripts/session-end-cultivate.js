@@ -20,9 +20,43 @@ const MIN_MESSAGES = 8;
 const MAX_LESSONS_PER_SESSION = 5;
 const TOMBSTONE_TTL_DAYS = 7;
 
+function readStdinJson() {
+  return new Promise((resolve) => {
+    // If stdin is a TTY there is no piped payload — resolve empty immediately.
+    if (process.stdin.isTTY) {
+      resolve({});
+      return;
+    }
+    let data = '';
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      try {
+        resolve(data.trim() ? JSON.parse(data) : {});
+      } catch {
+        resolve({});
+      }
+    };
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => { data += chunk; });
+    process.stdin.on('end', finish);
+    process.stdin.on('error', finish);
+    // Safety net: never hang the SessionEnd hook waiting on stdin.
+    setTimeout(finish, 2000).unref();
+  });
+}
+
 async function main() {
-  const transcriptPath = process.env.CLAUDE_TRANSCRIPT_PATH;
-  const sessionId = process.env.CLAUDE_SESSION_ID || 'unknown';
+  // Claude Code delivers hook payload as JSON on stdin (NOT env vars).
+  // Fall back to CLAUDE_CODE_SESSION_ID env for the session id when present.
+  const input = await readStdinJson();
+  const transcriptPath = input.transcript_path || process.env.CLAUDE_TRANSCRIPT_PATH;
+  const sessionId =
+    input.session_id ||
+    process.env.CLAUDE_CODE_SESSION_ID ||
+    process.env.CLAUDE_SESSION_ID ||
+    'unknown';
 
   if (!transcriptPath || !fs.existsSync(transcriptPath)) {
     process.exit(0);
@@ -86,7 +120,7 @@ async function main() {
       // Use --resume to inherit full session context (avoids passing a lossy excerpt).
       const child = spawn(
         claudePath,
-        ['-p', '--resume', sessionId, '--model', 'claude-opus-4-6[1m]', prompt],
+        ['-p', '--resume', sessionId, '--model', 'claude-opus-4-8[1m]', prompt],
         {
           detached: true,
           stdio: 'ignore',
@@ -216,14 +250,15 @@ Reject categorically:
 
 ## Rule 2 — Dedup against existing notes
 
-Before writing, list ${hubPath}/topics/*/raw/notes/ files modified in the last 14 days and skim their Rule lines and titles. For each candidate lesson, drop it if its Rule line is already covered (even with different wording). If all candidates are duplicates → exit silently per Rule 0.
+Before writing, list active ${hubPath}/topics/*/raw/notes/ files modified in the last 14 days and skim their Rule lines and titles. Skip ${hubPath}/topics/.archive/ unless an explicit archived write was requested. For each candidate lesson, drop it if its Rule line is already covered (even with different wording). If all candidates are duplicates → exit silently per Rule 0.
 
 ## Rule 3 — Topic targeting (no lazy "general")
 
 1. Read ${hubPath}/wikis.json to enumerate topics.
-2. Pick the most specific topic whose description matches the lesson's domain.
-3. Use "general" ONLY if the lesson is genuinely cross-domain AND no specific topic fits. When torn between specific and general, choose specific.
-4. If no topic fits and the lesson is high-value enough to justify a new topic, create one (see ${hubPath}/AGENTS.md or follow the cultivator-engine skill).
+2. Ignore topics with status "archived" or paths under topics/.archive/ unless an explicit archived write was requested.
+3. Pick the most specific active topic whose description matches the lesson's domain.
+4. Use "general" ONLY if the lesson is genuinely cross-domain AND no specific active topic fits. When torn between specific and general, choose specific.
+5. If no active topic fits and the lesson is high-value enough to justify a new topic, create one (see ${hubPath}/AGENTS.md or follow the cultivator-engine skill).
 
 ## Rule 4 — Cap and shape
 
@@ -236,7 +271,7 @@ Before writing, list ${hubPath}/topics/*/raw/notes/ files modified in the last 1
 1. Scan the resumed session for error→fix sequences, user corrections, gotchas, undocumented behaviors.
 2. Apply Rules 1–4 (durable filter → dedup → topic selection).
 3. If <2 lessons survive → delete ${markerPath} and exit silently. STOP.
-4. Otherwise: pick the chosen topic, write to ${hubPath}/topics/<chosen-topic>/raw/notes/${date}-ll-<descriptive-slug>.md with llm-wiki frontmatter (type: notes, source: "session", ingested: ${date}, tags: [...specific tags], confidence: high, summary: <one sentence>).
+4. Otherwise: pick the chosen active topic, write to ${hubPath}/topics/<chosen-topic>/raw/notes/${date}-ll-<descriptive-slug>.md with llm-wiki frontmatter (type: notes, source: "session", ingested: ${date}, tags: [...specific tags], confidence: high, summary: <one sentence>).
 5. Update the topic's raw/notes/_index.md (add a row) and log.md (one line).
 6. Delete ${markerPath}.`;
 }

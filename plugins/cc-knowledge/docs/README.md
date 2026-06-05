@@ -142,6 +142,7 @@ Manually extract lessons from the current session.
 | `--wiki <name>` | Target a specific topic |
 | `--dry-run` | Preview lessons without writing |
 | `--retry` | Process pending failed extractions |
+| `--include-archived` | Explicitly allow archived topic wikis |
 
 ### `/cc-knowledge:review`
 
@@ -158,6 +159,7 @@ Review and accept/reject pending proposals.
 | `--wiki <name>` | Only show proposals for one topic |
 | `--accept-all` | Accept all pending proposals |
 | `--reject <id>` | Reject a specific proposal |
+| `--include-archived` | Include archived topic wikis |
 
 ### `/cc-knowledge:status`
 
@@ -166,6 +168,7 @@ Show the cultivation dashboard.
 ```
 /cc-knowledge:status
 /cc-knowledge:status --wiki ml-training
+/cc-knowledge:status --include-archived
 ```
 
 ---
@@ -195,7 +198,7 @@ If the gate passes, the script:
 | 1. Session Scan | Find error→fix patterns, corrections, discoveries, gotchas | Candidate list |
 | 2. Lesson Extraction | Structure each into Category/Context/Symptom/Root cause/Fix/Rule | 2-7 lessons |
 | 3. Wiki Targeting | Classify into existing topic or create new one | Topic path |
-| 4. Tiered Write | Raw notes → auto-write; article appends → proposals/ | Files |
+| 4. Tiered Write | Raw notes → auto-write; article appends → `.librarian/proposals/` | Files |
 | 5. Post-flight | Update indexes, log, regenerate recall skill | Done |
 
 ### Wiki Structure
@@ -214,7 +217,7 @@ If the gate passes, the script:
         │   ├── concepts/
         │   ├── topics/
         │   └── references/
-        ├── proposals/                  # Pending article modifications
+        ├── .librarian/proposals/       # Pending article modifications
         ├── _index.md
         ├── config.md
         └── log.md
@@ -265,8 +268,8 @@ After each cultivation, a skill is regenerated at `~/.claude/skills/cc-knowledge
 | New topic creation | Auto-applied |
 | Index/log updates | Auto-applied |
 | Recall skill regeneration | Auto-applied |
-| Append Rule to existing article | → `proposals/` (needs review) |
-| Modify existing note | → `proposals/` (needs review) |
+| Append Rule to existing article | → `.librarian/proposals/` (needs review) |
+| Modify existing note | → `.librarian/proposals/` (needs review) |
 
 ---
 
@@ -345,7 +348,7 @@ node <plugin-path>/scripts/regen-skill.js <topic-name>
 
 ### Wiki conflicts with llm-wiki
 
-No conflict — both tools write to the same `~/wiki/` structure. CC Knowledge Cultivator only writes to `raw/notes/` and `proposals/`; llm-wiki manages `wiki/` (compiled articles). They complement each other.
+No conflict — both tools write to the same `~/wiki/` structure. CC Knowledge Cultivator writes lessons to `raw/notes/` and review artifacts to `.librarian/proposals/`; llm-wiki manages `wiki/` (compiled articles). They complement each other.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 description: "Show knowledge cultivation dashboard: topics, lesson counts, recent extractions, pending proposals, and recall skill status."
-argument-hint: "[--wiki <name>]"
+argument-hint: "[--wiki <name>] [--include-archived]"
 allowed-tools: Read, Glob, Grep, Bash(ls:*), Bash(wc:*), Bash(date:*)
 ---
 
@@ -11,6 +11,7 @@ Display the current state of the knowledge cultivation system.
 ### Parse $ARGUMENTS
 
 - **--wiki <name>**: Show detailed status for a specific topic only
+- **--include-archived**: Include archived topic wikis in the dashboard
 
 ### Steps
 
@@ -18,11 +19,11 @@ Display the current state of the knowledge cultivation system.
 
 2. **Check hub exists**: If no hub found, report "Not initialized — run /cc-knowledge:init" and exit.
 
-3. **Read `wikis.json`** for the topic registry.
+3. **Read `wikis.json`** for the topic registry. Show active topics by default; skip entries with `status: archived` or paths under `topics/.archive/` unless `--include-archived` is present.
 
 4. **For each topic** (or just the specified one):
    - Count files in `raw/notes/` (exclude `_index.md`)
-   - Count pending proposals in `proposals/`
+   - Count pending proposals in `.librarian/proposals/`
    - Read the last entry from `log.md` (last line starting with `##`)
    - Check if recall skill exists at `~/.claude/skills/cc-knowledge-<topic>/SKILL.md`
 

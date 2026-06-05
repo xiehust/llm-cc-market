@@ -79,7 +79,7 @@ Pick Category accurately at extraction time — it drives downstream presentatio
 When proposing an article modification:
 
 ```
-~/wiki/topics/<topic>/proposals/YYYY-MM-DD-<slug>.proposal.md
+~/wiki/topics/<topic>/.librarian/proposals/YYYY-MM-DD-<slug>.proposal.md
 ```
 
 ```yaml

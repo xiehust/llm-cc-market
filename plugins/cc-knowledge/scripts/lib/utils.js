@@ -10,19 +10,47 @@ function getWikiHub() {
   const configPath = path.join(getHomeDir(), '.config', 'llm-wiki', 'config.json');
   const content = readFile(configPath);
   if (content) {
+    let config;
     try {
-      const config = JSON.parse(content);
+      config = JSON.parse(content);
+    } catch {}
+
+    if (config) {
       if (config.hub_path) {
-        const resolved = config.hub_path.replace(/^~/, getHomeDir());
-        if (fs.existsSync(resolved)) return resolved;
+        const resolved = expandLeadingTilde(config.hub_path);
+        if (pathExists(resolved)) return resolved;
+        if (config.resolved_path && isInitializedHub(config.resolved_path)) {
+          return config.resolved_path;
+        }
+        return resolved;
       }
-      if (config.resolved_path && fs.existsSync(config.resolved_path)) {
+      if (config.resolved_path && isInitializedHub(config.resolved_path)) {
         return config.resolved_path;
       }
-    } catch {}
+    }
   }
   const fallback = path.join(getHomeDir(), 'wiki');
   return fallback;
+}
+
+function expandLeadingTilde(value) {
+  return value.replace(/^~(?=$|[\\/])/, getHomeDir());
+}
+
+function pathExists(filePath) {
+  try {
+    fs.statSync(filePath);
+    return true;
+  } catch (err) {
+    if (err && (err.code === 'EACCES' || err.code === 'EPERM')) {
+      throw err;
+    }
+    return false;
+  }
+}
+
+function isInitializedHub(hubPath) {
+  return pathExists(path.join(hubPath, '_index.md'));
 }
 
 function ensureDir(dirPath) {

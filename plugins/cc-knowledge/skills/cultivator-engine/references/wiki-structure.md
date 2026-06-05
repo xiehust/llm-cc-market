@@ -33,6 +33,8 @@
 
 ```
 topics/<topic>/
+├── .librarian/
+│   └── proposals/                 # Pending article modifications
 ├── raw/
 │   └── notes/
 │       ├── _index.md              # Table of all raw notes
@@ -41,7 +43,6 @@ topics/<topic>/
 │   ├── concepts/                  # Conceptual articles
 │   ├── topics/                    # Topic-specific articles
 │   └── references/                # Reference material
-├── proposals/                     # Pending article modifications
 ├── _index.md                      # Topic-level index
 ├── config.md                      # Topic configuration
 └── log.md                         # Topic activity log
@@ -108,6 +109,13 @@ Last updated: YYYY-MM-DD
 ## [YYYY-MM-DD] ll | "<topic hint>" → raw/notes/YYYY-MM-DD-ll-<slug>.md (N lessons)
 ## [YYYY-MM-DD] proposal-accepted | "<proposal slug>" applied to wiki/concepts/<article>.md
 ```
+
+## Archived Topics
+
+Topic wikis under `topics/.archive/` or registry entries with
+`status: archived` are preserved but skipped by default. Cultivation, status,
+review, and recall-skill generation should operate on active topics unless the
+user explicitly requests archived content.
 
 ## Hub _index.md Format
 

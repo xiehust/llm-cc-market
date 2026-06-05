@@ -55,19 +55,20 @@ For each surviving candidate, produce:
 ### Stage 3: Cross-session Dedup + Wiki Targeting
 
 **Dedup first** (before deciding where to write):
-1. List files in `~/wiki/topics/*/raw/notes/` modified in the last 14 days.
+1. List files in active `~/wiki/topics/*/raw/notes/` modified in the last 14 days. Skip `~/wiki/topics/.archive/` unless an explicit archived write was requested.
 2. Skim their titles, summary frontmatter, and Rule lines.
 3. For each candidate lesson, drop it if its Rule is already covered (even with different wording).
 4. If all candidates are dropped → silent exit (Stage 5).
 
 **Topic targeting (no lazy "general"):**
 1. Read `~/wiki/wikis.json` to enumerate topics with their descriptions.
-2. Pick the most specific topic whose description matches the lesson's domain.
-3. Use `general` ONLY when the lesson is genuinely cross-domain (shell, git, generic Python idioms) AND no specific topic fits. When torn between specific and general → choose specific.
-4. New-topic creation is only justified when the lesson is high-value AND clearly opens a new domain. If unsure, write to the closest existing topic instead.
+2. Ignore registry entries with `status: archived` or paths under `topics/.archive/` unless an explicit archived write was requested.
+3. Pick the most specific active topic whose description matches the lesson's domain.
+4. Use `general` ONLY when the lesson is genuinely cross-domain (shell, git, generic Python idioms) AND no specific active topic fits. When torn between specific and general → choose specific.
+5. New-topic creation is only justified when the lesson is high-value AND clearly opens a new domain. If unsure, write to the closest existing active topic instead.
 
 If a new topic IS justified:
-- Create `~/wiki/topics/<slug>/` with subdirectories: `raw/notes/`, `wiki/concepts/`, `wiki/topics/`, `wiki/references/`, `proposals/`
+- Create `~/wiki/topics/<slug>/` with subdirectories: `raw/notes/`, `wiki/concepts/`, `wiki/topics/`, `wiki/references/`
 - Create `_index.md` (Contents table), `config.md`, `log.md`
 - Register in `~/wiki/wikis.json` (`"hub"` + `"local_wikis": []`)
 - Update `~/wiki/_index.md`
@@ -84,7 +85,7 @@ For each surviving lesson:
 - Append one line to `<topic>/log.md`
 
 **Propose, don't directly edit, polished articles:**
-If a lesson's Rule strongly matches an existing article in `<topic>/wiki/`, write the proposed append to `<topic>/proposals/YYYY-MM-DD-<slug>.proposal.md` instead of editing the article.
+If a lesson's Rule strongly matches an existing article in `<topic>/wiki/`, write the proposed append to `<topic>/.librarian/proposals/YYYY-MM-DD-<slug>.proposal.md` instead of editing the article.
 
 ### Stage 5: Post-flight
 

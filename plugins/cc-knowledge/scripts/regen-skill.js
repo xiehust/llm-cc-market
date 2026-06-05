@@ -146,8 +146,8 @@ function main() {
     .sort((a, b) => b.fileIndex - a.fileIndex)
     .slice(0, 5);
 
-  // Count proposals
-  const proposalsDir = path.join(topicPath, 'proposals');
+  // Count proposal review artifacts in llm-wiki's maintenance area.
+  const proposalsDir = path.join(topicPath, '.librarian', 'proposals');
   let proposalCount = 0;
   if (fs.existsSync(proposalsDir)) {
     proposalCount = fs.readdirSync(proposalsDir).filter(f => f.endsWith('.proposal.md')).length;

@@ -1,6 +1,6 @@
 ---
 description: "Review and accept/reject pending knowledge proposals. Proposals are article modifications that require user approval before being applied."
-argument-hint: "[--wiki <name>] [--accept-all] [--reject <id>]"
+argument-hint: "[--wiki <name>] [--accept-all] [--reject <id>] [--include-archived]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(rm:*), Bash(mv:*), Bash(date:*)
 ---
 
@@ -13,14 +13,16 @@ Review pending proposals in the knowledge wiki and apply or reject them.
 - **--wiki <name>**: Only show proposals for a specific topic
 - **--accept-all**: Accept all pending proposals without individual review
 - **--reject <id>**: Reject a specific proposal by filename slug
+- **--include-archived**: Explicitly include proposals from archived topic wikis
 
 ### Steps
 
 1. **Resolve wiki hub** (read `~/.config/llm-wiki/config.json`, fallback `~/wiki/`)
 
 2. **Find proposals**:
-   - If `--wiki` specified: glob `<hub>/topics/<wiki>/proposals/*.proposal.md`
-   - Otherwise: glob `<hub>/topics/*/proposals/*.proposal.md`
+   - If `--wiki` specified: resolve it through `wikis.json`; stop if the entry has `status: archived` or a path under `topics/.archive/` unless `--include-archived` is present
+   - For an active `--wiki`: glob `<topic>/.librarian/proposals/*.proposal.md`
+   - Otherwise: glob `<hub>/topics/*/.librarian/proposals/*.proposal.md`, excluding `<hub>/topics/.archive/**` unless `--include-archived` is present
 
 3. **If no proposals found**: Report "No pending proposals" and exit.
 

@@ -1,6 +1,6 @@
 ---
 description: "Manually extract lessons from the current session. Use when auto-extraction didn't fire, or to capture knowledge mid-session."
-argument-hint: "[\"topic hint\"] [--wiki <name>] [--dry-run] [--retry]"
+argument-hint: "[\"topic hint\"] [--wiki <name>] [--dry-run] [--retry] [--include-archived]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(mkdir:*), Bash(date:*), Bash(wc:*)
 ---
 
@@ -14,6 +14,7 @@ Extract lessons learned from the current session (or a pending session) and save
 - **--wiki <name>**: Target a specific topic wiki
 - **--dry-run**: Show extracted lessons without writing anything
 - **--retry**: Process pending markers from failed previous extractions
+- **--include-archived**: Explicitly allow targeting an archived topic
 
 ### If --retry is specified
 
@@ -57,9 +58,10 @@ Guidelines:
 
 1. Resolve wiki hub (read `~/.config/llm-wiki/config.json` for `hub_path`, fallback `~/wiki/`)
 2. Read `<hub>/wikis.json` for existing topics
-3. If `--wiki` specified, use that topic
-4. Otherwise, classify lessons into best-matching topic by domain/technology
-5. If no topic matches, offer to create a new one
+3. If `--wiki` specified, use that topic only if its registry entry is active
+4. Otherwise, classify lessons into the best-matching active topic by domain/technology
+5. Skip topics with `status: archived` or paths under `topics/.archive/` unless `--include-archived` is present
+6. If no active topic matches, offer to create a new one
 
 ### Stage 4: Tiered Write
 
@@ -72,7 +74,7 @@ Guidelines:
 
 **Propose (if lesson Rule matches existing article):**
 - Grep `<topic>/wiki/` for keywords from the Rule
-- If strong match, write `<topic>/proposals/YYYY-MM-DD-<slug>.proposal.md`
+- If strong match, write `<topic>/.librarian/proposals/YYYY-MM-DD-<slug>.proposal.md`
 - Report: "Proposal created for <article> — run /cc-knowledge:review"
 
 ### Stage 5: Post-flight

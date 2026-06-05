@@ -58,7 +58,7 @@ Initialize the wiki hub for knowledge cultivation.
    - Create `~/.claude/cc-knowledge-pending/` directory
 
 3. **Create first topic** (if `--topic` provided):
-   - Create `<hub>/topics/<topic>/` with subdirs: `raw/notes/`, `wiki/concepts/`, `wiki/topics/`, `wiki/references/`, `proposals/`
+   - Create `<hub>/topics/<topic>/` with subdirs: `raw/notes/`, `wiki/concepts/`, `wiki/topics/`, `wiki/references/`
    - Create `_index.md`, `config.md`, `log.md` in the topic
    - Register in `wikis.json`
    - Update hub `_index.md`

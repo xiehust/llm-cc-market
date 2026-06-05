@@ -142,6 +142,7 @@ CC Knowledge Cultivator 自动从你的会话中提取经验教训，存储到�
 | `--wiki <名称>` | 指定目标主题 |
 | `--dry-run` | 预览经验而不写入 |
 | `--retry` | 处理之前失败的提取 |
+| `--include-archived` | 显式允许归档主题 Wiki |
 
 ### `/cc-knowledge:review`
 
@@ -158,6 +159,7 @@ CC Knowledge Cultivator 自动从你的会话中提取经验教训，存储到�
 | `--wiki <名称>` | 只显示某个主题的提案 |
 | `--accept-all` | 接受所有待处理提案 |
 | `--reject <id>` | 拒绝指定提案 |
+| `--include-archived` | 包含归档主题 Wiki |
 
 ### `/cc-knowledge:status`
 
@@ -166,6 +168,7 @@ CC Knowledge Cultivator 自动从你的会话中提取经验教训，存储到�
 ```
 /cc-knowledge:status
 /cc-knowledge:status --wiki ml-training
+/cc-knowledge:status --include-archived
 ```
 
 ---
@@ -195,7 +198,7 @@ CC Knowledge Cultivator 自动从你的会话中提取经验教训，存储到�
 | 1. 会话扫描 | 找出错误→修复模式、用户纠正、发现、踩坑 | 候选列表 |
 | 2. 经验提取 | 结构化为：类别/背景/症状/根因/修复/规则 | 2-7 条经验 |
 | 3. Wiki 定位 | 分类到已有主题或创建新主题 | 主题路径 |
-| 4. 分层写入 | 原始笔记 → 自动写入；文章追加 → proposals/ | 文件 |
+| 4. 分层写入 | 原始笔记 → 自动写入；文章追加 → `.librarian/proposals/` | 文件 |
 | 5. 收尾 | 更新索引、日志，重新生成召回技能 | 完成 |
 
 ### Wiki 目录结构
@@ -214,7 +217,7 @@ CC Knowledge Cultivator 自动从你的会话中提取经验教训，存储到�
         │   ├── concepts/
         │   ├── topics/
         │   └── references/
-        ├── proposals/                  # 待审核的文章修改
+        ├── .librarian/proposals/       # 待审核的文章修改
         ├── _index.md
         ├── config.md
         └── log.md
@@ -265,8 +268,8 @@ summary: "EC2 上的 cuDNN 安装和 CUDA 版本匹配"
 | 新主题创建 | 自动应用 |
 | 索引/日志更新 | 自动应用 |
 | 召回技能重新生成 | 自动应用 |
-| 向已有文章追加规则 | → `proposals/`（需审核） |
-| 修改已有笔记 | → `proposals/`（需审核） |
+| 向已有文章追加规则 | → `.librarian/proposals/`（需审核） |
+| 修改已有笔记 | → `.librarian/proposals/`（需审核） |
 
 ---
 
@@ -345,7 +348,7 @@ node <插件路径>/scripts/regen-skill.js <主题名称>
 
 ### 与 llm-wiki 冲突
 
-不会冲突——两个工具写入同一个 `~/wiki/` 结构。CC Knowledge Cultivator 只写入 `raw/notes/` 和 `proposals/`；llm-wiki 管理 `wiki/`（编译后的文章）。两者互补。
+不会冲突——两个工具写入同一个 `~/wiki/` 结构。CC Knowledge Cultivator 将经验写入 `raw/notes/`，将审核材料写入 `.librarian/proposals/`；llm-wiki 管理 `wiki/`（编译后的文章）。两者互补。
 
 ---
 
