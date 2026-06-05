@@ -197,6 +197,68 @@ title: [broken
     expect(index.status.warnings.some((warning) => warning.includes('topics/ml-training/wiki/concepts/private'))).toBe(true);
   });
 
+  it('continues indexing active topics when the archive directory cannot be read during discovery', async () => {
+    const hubPath = await createTempFixtureWiki();
+    const archiveDir = join(hubPath, 'topics', '.archive');
+    await chmod(archiveDir, 0o000);
+
+    let index: Awaited<ReturnType<typeof buildWikiIndex>>;
+    try {
+      index = await buildWikiIndex(hubPath, { includeArchived: true });
+    } finally {
+      await chmod(archiveDir, 0o700).catch(() => undefined);
+    }
+
+    expect(index.status.ready).toBe(true);
+    expect(index.topics.map((topic) => topic.slug)).toContain('ml-training');
+    expect(index.documents.some((doc) => doc.relativePath.endsWith('cuda-packages.md'))).toBe(true);
+    expect(index.status.warnings.some((warning) => warning.includes('failed to read directory topics/.archive'))).toBe(true);
+  });
+
+  it('continues with usable registry topics when the topics directory cannot be read during discovery', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'wiki-index-'));
+    tmpRoots.push(root);
+    const hubPath = join(root, 'wiki');
+    const topicsDir = join(hubPath, 'topics');
+    await mkdir(topicsDir, { recursive: true });
+    await mkdir(join(hubPath, 'external-topic', 'wiki', 'concepts'), { recursive: true });
+    await writeFile(
+      join(hubPath, 'wikis.json'),
+      JSON.stringify({
+        wikis: {
+          hub: { path: '~/wiki', description: 'Hub' },
+          external: { path: 'external-topic', description: 'External topic', status: 'active' },
+        },
+      }),
+      'utf8',
+    );
+    await writeFile(
+      join(hubPath, 'external-topic', 'wiki', 'concepts', 'usable.md'),
+      `---
+title: "Usable"
+---
+# Usable
+`,
+      'utf8',
+    );
+    await chmod(topicsDir, 0o000);
+
+    let index: Awaited<ReturnType<typeof buildWikiIndex>>;
+    try {
+      index = await buildWikiIndex(hubPath);
+    } finally {
+      await chmod(topicsDir, 0o700).catch(() => undefined);
+    }
+
+    expect(index.status.ready).toBe(true);
+    expect(index.topics.find((topic) => topic.slug === 'external')).toMatchObject({
+      slug: 'external',
+      counts: { wiki: 1, total: 1 },
+    });
+    expect(index.documents.some((doc) => doc.relativePath.endsWith('external-topic/wiki/concepts/usable.md'))).toBe(true);
+    expect(index.status.warnings.some((warning) => warning.includes('failed to read directory topics'))).toBe(true);
+  });
+
   it('classifies documents from the topic-relative path when the topic slug matches a content bucket', async () => {
     const root = await mkdtemp(join(tmpdir(), 'wiki-index-'));
     tmpRoots.push(root);

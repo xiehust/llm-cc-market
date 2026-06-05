@@ -177,11 +177,18 @@ async function readRegistry(hubPath: string, warnings: string[]): Promise<Regist
   }
 }
 
-async function discoverArchivedDirectoryTopics(topicsDir: string, known: Set<string>): Promise<TopicEntry[]> {
+async function discoverArchivedDirectoryTopics(hubPath: string, topicsDir: string, known: Set<string>, warnings: string[]): Promise<TopicEntry[]> {
   const archiveDir = join(topicsDir, '.archive');
   if (!(await isDirectory(archiveDir))) return [];
 
-  const archivedEntries = await readdir(archiveDir, { withFileTypes: true });
+  let archivedEntries;
+  try {
+    archivedEntries = await readdir(archiveDir, { withFileTypes: true });
+  } catch (error) {
+    warnings.push(`failed to read directory ${relative(hubPath, archiveDir)}: ${(error as Error).message}`);
+    return [];
+  }
+
   return archivedEntries
     .filter((entry) => entry.isDirectory() && !known.has(entry.name))
     .sort((left, right) => left.name.localeCompare(right.name))
@@ -191,7 +198,7 @@ async function discoverArchivedDirectoryTopics(topicsDir: string, known: Set<str
     }));
 }
 
-async function discoverTopics(hubPath: string, registry: Registry): Promise<TopicEntry[]> {
+async function discoverTopics(hubPath: string, registry: Registry, warnings: string[]): Promise<TopicEntry[]> {
   const fromRegistry = Object.entries(registry.wikis ?? {})
     .filter(([slug]) => slug !== 'hub')
     .map(([slug, entry]) => ({ slug, entry }));
@@ -200,7 +207,14 @@ async function discoverTopics(hubPath: string, registry: Registry): Promise<Topi
   const topicsDir = join(hubPath, 'topics');
   const fromDirs: TopicEntry[] = [];
   if (await isDirectory(topicsDir)) {
-    const dirEntries = await readdir(topicsDir, { withFileTypes: true });
+    let dirEntries;
+    try {
+      dirEntries = await readdir(topicsDir, { withFileTypes: true });
+    } catch (error) {
+      warnings.push(`failed to read directory ${relative(hubPath, topicsDir)}: ${(error as Error).message}`);
+      return fromRegistry;
+    }
+
     for (const entry of dirEntries.sort((left, right) => left.name.localeCompare(right.name))) {
       if (!entry.isDirectory() || entry.name === '.archive' || known.has(entry.name)) continue;
       known.add(entry.name);
@@ -208,7 +222,7 @@ async function discoverTopics(hubPath: string, registry: Registry): Promise<Topi
     }
   }
 
-  return [...fromRegistry, ...fromDirs, ...(await discoverArchivedDirectoryTopics(topicsDir, known))];
+  return [...fromRegistry, ...fromDirs, ...(await discoverArchivedDirectoryTopics(hubPath, topicsDir, known, warnings))];
 }
 
 function incrementCounts(counts: TopicCounts, kind: DocumentKind): void {
@@ -239,7 +253,7 @@ export async function buildWikiIndex(hubPath: string, options: BuildOptions = {}
   }
 
   const registry = await readRegistry(hubPath, warnings);
-  const topicEntries = await discoverTopics(hubPath, registry);
+  const topicEntries = await discoverTopics(hubPath, registry, warnings);
   const topics: WikiTopic[] = [];
   const documents: WikiDocument[] = [];
 
