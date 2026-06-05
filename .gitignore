@@ -5,7 +5,7 @@
 .env
 .env.*
 *.local
-
+.codegraph
 # Python
 __pycache__/
 *.py[cod]
