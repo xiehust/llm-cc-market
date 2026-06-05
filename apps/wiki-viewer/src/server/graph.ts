@@ -54,7 +54,7 @@ interface MutableNode extends GraphNode {
 
 const DEFAULT_MAX_NODES = 250;
 const DEFAULT_MAX_EDGES = 500;
-const SAME_TAG_EDGE_LIMIT_PER_TAG = 25;
+const SAME_TAG_EDGE_LIMIT_PER_TAG = 20;
 
 const NODE_TYPE_ORDER: Record<GraphNodeType, number> = {
   document: 0,

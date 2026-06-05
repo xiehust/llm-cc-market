@@ -206,6 +206,25 @@ describe('buildKnowledgeGraph', () => {
     expect(graph.nodes).toHaveLength(3);
   });
 
+  it('caps inferred same_tag edges per tag', () => {
+    const index = indexFixture();
+    index.documents = Array.from({ length: 8 }, (_, docIndex) =>
+      document({
+        id: `dense-doc-${docIndex}`,
+        title: `Dense Document ${docIndex}`,
+        relativePath: `topics/ml-training/wiki/concepts/dense-doc-${docIndex}.md`,
+        absolutePath: `/tmp/wiki/topics/ml-training/wiki/concepts/dense-doc-${docIndex}.md`,
+        tags: ['dense'],
+        body: '',
+      }),
+    );
+
+    const graph = buildKnowledgeGraph(index, { maxEdges: 1000 });
+    const sameTagEdges = graph.edges.filter((edge) => edge.type === 'same_tag' && edge.label === 'dense');
+
+    expect(sameTagEdges).toHaveLength(20);
+  });
+
   it('applies maxNodes and maxEdges caps with omitted counts', () => {
     const largeIndex = indexFixture();
     largeIndex.documents = Array.from({ length: 20 }, (_, index) =>
