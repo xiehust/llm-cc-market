@@ -1,6 +1,8 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Badge from './Badge';
 import { searchWiki, type SearchResultDto, type TopicDto } from '../api';
+
+const SEARCH_RESULTS_PAGE_SIZE = 10;
 
 interface SearchPanelProps {
   includeArchived: boolean;
@@ -23,6 +25,7 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  const [page, setPage] = useState(1);
   const searchRequest = useRef(0);
 
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
     setLoading(false);
     setError(null);
     setSearched(false);
+    setPage(1);
   }, [includeArchived]);
 
   useEffect(() => {
@@ -43,7 +47,16 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
     setLoading(false);
     setError(null);
     setSearched(false);
+    setPage(1);
   }, [topic, topics]);
+
+  const totalPages = Math.max(1, Math.ceil(results.length / SEARCH_RESULTS_PAGE_SIZE));
+  const visibleResults = useMemo(() => {
+    const firstIndex = (page - 1) * SEARCH_RESULTS_PAGE_SIZE;
+    return results.slice(firstIndex, firstIndex + SEARCH_RESULTS_PAGE_SIZE);
+  }, [page, results]);
+  const firstResultNumber = results.length === 0 ? 0 : (page - 1) * SEARCH_RESULTS_PAGE_SIZE + 1;
+  const lastResultNumber = Math.min(page * SEARCH_RESULTS_PAGE_SIZE, results.length);
 
   async function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,20 +68,26 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
       setLoading(false);
       setError(null);
       setSearched(false);
+      setPage(1);
       return;
     }
 
     setLoading(true);
     setError(null);
     setSearched(true);
+    setPage(1);
     const requestId = ++searchRequest.current;
     try {
       const response = await searchWiki(trimmedQuery, includeArchived, topic || undefined);
-      if (searchRequest.current === requestId) setResults(response.results ?? []);
+      if (searchRequest.current === requestId) {
+        setResults(response.results ?? []);
+        setPage(1);
+      }
     } catch (err) {
       if (searchRequest.current === requestId) {
         setError(err instanceof Error ? err.message : String(err));
         setResults([]);
+        setPage(1);
       }
     } finally {
       if (searchRequest.current === requestId) setLoading(false);
@@ -110,7 +129,39 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
       {searched ? (
         <div className="search-results">
           {results.length === 0 && !loading ? <p className="muted">No matching documents found.</p> : null}
-          {results.map((result) => (
+          {results.length > 0 ? (
+            <div className="pagination-bar" aria-label="Search result pagination">
+              <p>
+                Showing {firstResultNumber}-{lastResultNumber} of {results.length} results
+              </p>
+              {results.length > SEARCH_RESULTS_PAGE_SIZE ? (
+                <div className="pagination-controls">
+                  <button
+                    aria-label="Previous page"
+                    className="pixel-button compact"
+                    disabled={page === 1}
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    type="button"
+                  >
+                    Previous
+                  </button>
+                  <span>
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    aria-label="Next page"
+                    className="pixel-button compact"
+                    disabled={page === totalPages}
+                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                    type="button"
+                  >
+                    Next
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {visibleResults.map((result) => (
             <article className="result-card" key={result.id}>
               <div className="result-main">
                 <div className="result-badges">

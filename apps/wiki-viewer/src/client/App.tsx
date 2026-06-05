@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ShelfHome from './components/ShelfHome';
 import SearchPanel from './components/SearchPanel';
 import SetupView from './components/SetupView';
@@ -18,6 +18,7 @@ export default function App() {
   const [view, setView] = useState<ViewState>({ name: 'home' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const workspaceRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +55,12 @@ export default function App() {
   const displayedDocumentCount = includeArchived
     ? visibleTopics.reduce((total, topic) => total + topic.counts.total, 0)
     : (status?.documentCount ?? visibleTopics.reduce((total, topic) => total + topic.counts.total, 0));
+
+  useEffect(() => {
+    if (view.name === 'reader') {
+      workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [view]);
 
   function openTopic(slug: string) {
     setView({ name: 'topic', slug });
@@ -126,7 +133,7 @@ export default function App() {
 
       <SearchPanel includeArchived={includeArchived} topics={visibleTopics} onOpenDocument={openDocument} />
 
-      <main className="workspace">
+      <main className="workspace" ref={workspaceRef}>
         {loading ? <p className="loading-line">Refreshing shelf...</p> : null}
         {error ? (
           <p className="inline-error" role="alert">

@@ -206,6 +206,33 @@ code {
   margin-top: 18px;
 }
 
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 3px solid #211a18;
+  background: #f2cf5b;
+  box-shadow: 4px 4px 0 #211a18;
+  padding: 10px 12px;
+  font-weight: 900;
+}
+
+.pagination-bar p {
+  margin: 0;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-controls span {
+  min-width: 88px;
+  text-align: center;
+}
+
 .result-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -657,10 +684,17 @@ code {
   }
 
   .search-controls,
+  .pagination-bar,
   .result-card,
   .reader-layout,
   .checked-paths li {
     grid-template-columns: 1fr;
+  }
+
+  .pagination-bar,
+  .pagination-controls {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .shelf-grid,

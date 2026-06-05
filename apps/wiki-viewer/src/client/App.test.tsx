@@ -61,6 +61,12 @@ describe('App', () => {
   });
 
   it('opens a document reader from a search result', async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       const textUrl = String(url);
       if (textUrl.includes('/api/status')) {
@@ -124,6 +130,65 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'CUDA setup note' })).toBeInTheDocument();
     expect(screen.getByText('Install keyring first.')).toBeInTheDocument();
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+  });
+
+  it('paginates search results', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const textUrl = String(url);
+      if (textUrl.includes('/api/status')) {
+        return Response.json({ ready: true, hubPath: '/tmp/wiki', warnings: [], topicCount: 1, documentCount: 12 });
+      }
+      if (textUrl.includes('/api/topics')) {
+        return Response.json([
+          {
+            slug: 'ml-training',
+            description: 'Training lessons',
+            archived: false,
+            counts: { raw: 12, wiki: 0, proposals: 0, inventory: 0, output: 0, total: 12 },
+          },
+        ]);
+      }
+      if (textUrl.includes('/api/search')) {
+        return Response.json({
+          results: Array.from({ length: 12 }, (_, index) => ({
+            id: `ml-training/raw/notes/result-${index + 1}.md`,
+            topic: 'ml-training',
+            relativePath: `raw/notes/result-${index + 1}.md`,
+            kind: 'raw',
+            title: `Result ${index + 1}`,
+            tags: [],
+            dates: {},
+            archived: false,
+            warnings: [],
+            score: 12 - index,
+            snippet: `Snippet ${index + 1}`,
+          })),
+        });
+      }
+      return Response.json({});
+    }) as typeof fetch;
+
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText('Search wiki'), { target: { value: 'result' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    expect(await screen.findByText('Result 1')).toBeInTheDocument();
+    expect(screen.getByText('Showing 1-10 of 12 results')).toBeInTheDocument();
+    expect(screen.queryByText('Result 11')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+    expect(await screen.findByText('Result 11')).toBeInTheDocument();
+    expect(screen.getByText('Showing 11-12 of 12 results')).toBeInTheDocument();
+    expect(screen.queryByText('Result 1')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
+
+    expect(await screen.findByText('Result 1')).toBeInTheDocument();
+    expect(screen.queryByText('Result 11')).not.toBeInTheDocument();
   });
 
   it('clears the previous reader content while a new document fetch is pending and after it fails', async () => {
