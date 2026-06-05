@@ -67,8 +67,8 @@ export interface SearchResponseDto {
   results: SearchResultDto[];
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, init);
   if (!response.ok) {
     let message = `Request failed: ${response.status}`;
     try {
@@ -100,8 +100,8 @@ export function getTopic(slug: string, includeArchived: boolean): Promise<TopicD
   return fetchJson<TopicDetailDto>(withArchiveParam(`/api/topics/${encodeURIComponent(slug)}`, includeArchived));
 }
 
-export function getDocument(id: string): Promise<DocumentDetailDto> {
-  return fetchJson<DocumentDetailDto>(`/api/documents/${encodeURIComponent(id)}`);
+export function getDocument(id: string, signal?: AbortSignal): Promise<DocumentDetailDto> {
+  return fetchJson<DocumentDetailDto>(`/api/documents/${encodeURIComponent(id)}`, { signal });
 }
 
 export function searchWiki(q: string, includeArchived: boolean, topic?: string): Promise<SearchResponseDto> {

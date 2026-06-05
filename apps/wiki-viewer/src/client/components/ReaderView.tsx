@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Badge from './Badge';
@@ -20,24 +20,28 @@ export default function ReaderView({ documentId, onBack }: ReaderViewProps) {
   const [document, setDocument] = useState<DocumentDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestId = useRef(0);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    const currentRequest = ++requestId.current;
+    setDocument(null);
     setLoading(true);
     setError(null);
-    getDocument(documentId)
+    getDocument(documentId, controller.signal)
       .then((detail) => {
-        if (!cancelled) setDocument(detail);
+        if (requestId.current === currentRequest) setDocument(detail);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+        if (controller.signal.aborted || requestId.current !== currentRequest) return;
+        setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (requestId.current === currentRequest) setLoading(false);
       });
 
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [documentId]);
 
@@ -54,7 +58,11 @@ export default function ReaderView({ documentId, onBack }: ReaderViewProps) {
       </div>
 
       {loading ? <p className="loading-line">Loading document...</p> : null}
-      {error ? <p className="inline-error">{error}</p> : null}
+      {error ? (
+        <p className="inline-error" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       {document ? (
         <div className="reader-layout">

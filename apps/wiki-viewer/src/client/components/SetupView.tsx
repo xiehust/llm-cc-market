@@ -27,7 +27,7 @@ export default function SetupView({ status, error }: SetupViewProps) {
           {error ? (
             <div>
               <dt>Error</dt>
-              <dd>{error}</dd>
+              <dd role="alert">{error}</dd>
             </div>
           ) : null}
         </dl>

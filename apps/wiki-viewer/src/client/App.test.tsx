@@ -3,6 +3,16 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, resolve, reject };
+}
+
 describe('App', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -114,5 +124,161 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'CUDA setup note' })).toBeInTheDocument();
     expect(screen.getByText('Install keyring first.')).toBeInTheDocument();
+  });
+
+  it('clears the previous reader content while a new document fetch is pending and after it fails', async () => {
+    const secondDocument = createDeferred<Response>();
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const textUrl = String(url);
+      if (textUrl.includes('/api/status')) {
+        return Response.json({ ready: true, hubPath: '/tmp/wiki', warnings: [], topicCount: 1, documentCount: 2 });
+      }
+      if (textUrl.includes('/api/topics')) {
+        return Response.json([
+          {
+            slug: 'ml-training',
+            description: 'Training lessons',
+            archived: false,
+            counts: { raw: 2, wiki: 0, proposals: 0, inventory: 0, output: 0, total: 2 },
+          },
+        ]);
+      }
+      if (textUrl.includes('/api/search') && textUrl.includes('q=first')) {
+        return Response.json({
+          results: [
+            {
+              id: 'ml-training/raw/notes/first.md',
+              topic: 'ml-training',
+              relativePath: 'raw/notes/first.md',
+              kind: 'raw',
+              title: 'First note',
+              tags: [],
+              dates: {},
+              archived: false,
+              warnings: [],
+              score: 10,
+              snippet: 'First match',
+            },
+          ],
+        });
+      }
+      if (textUrl.includes('/api/search') && textUrl.includes('q=second')) {
+        return Response.json({
+          results: [
+            {
+              id: 'ml-training/raw/notes/second.md',
+              topic: 'ml-training',
+              relativePath: 'raw/notes/second.md',
+              kind: 'raw',
+              title: 'Second note',
+              tags: [],
+              dates: {},
+              archived: false,
+              warnings: [],
+              score: 9,
+              snippet: 'Second match',
+            },
+          ],
+        });
+      }
+      if (textUrl.includes('/api/documents/ml-training%2Fraw%2Fnotes%2Ffirst.md')) {
+        return Response.json({
+          id: 'ml-training/raw/notes/first.md',
+          topic: 'ml-training',
+          relativePath: 'raw/notes/first.md',
+          kind: 'raw',
+          title: 'First note',
+          tags: [],
+          dates: {},
+          archived: false,
+          warnings: [],
+          body: '# First note\n\nOld reader body.',
+        });
+      }
+      if (textUrl.includes('/api/documents/ml-training%2Fraw%2Fnotes%2Fsecond.md')) {
+        return secondDocument.promise;
+      }
+      return Response.json({});
+    }) as typeof fetch;
+
+    render(<App />);
+
+    const search = await screen.findByLabelText('Search wiki');
+    fireEvent.change(search, { target: { value: 'first' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Open First note/ }));
+    expect(await screen.findByText('Old reader body.')).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: 'second' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Open Second note/ }));
+
+    expect(await screen.findByText('Loading document...')).toBeInTheDocument();
+    expect(screen.queryByText('Old reader body.')).not.toBeInTheDocument();
+
+    secondDocument.resolve(Response.json({ error: 'document not found' }, { status: 404 }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('document not found');
+    expect(screen.queryByText('Old reader body.')).not.toBeInTheDocument();
+  });
+
+  it('clears search results when archive visibility changes', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const textUrl = String(url);
+      if (textUrl.includes('/api/status')) {
+        return Response.json({ ready: true, hubPath: '/tmp/wiki', warnings: [], topicCount: 1, documentCount: 1 });
+      }
+      if (textUrl.includes('/api/topics')) {
+        return Response.json([
+          {
+            slug: 'ml-training',
+            description: 'Training lessons',
+            archived: false,
+            counts: { raw: 1, wiki: 0, proposals: 0, inventory: 0, output: 0, total: 1 },
+          },
+        ]);
+      }
+      if (textUrl.includes('/api/search') && textUrl.includes('includeArchived=true')) {
+        return Response.json({
+          results: [
+            {
+              id: 'old-topic/raw/notes/legacy.md',
+              topic: 'old-topic',
+              relativePath: 'raw/notes/legacy.md',
+              kind: 'raw',
+              title: 'Legacy archive note',
+              tags: [],
+              dates: {},
+              archived: true,
+              warnings: [],
+              score: 5,
+              snippet: 'Archived-only hit',
+            },
+          ],
+        });
+      }
+      return Response.json({ results: [] });
+    }) as typeof fetch;
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByLabelText('Archive'));
+    fireEvent.change(screen.getByLabelText('Search wiki'), { target: { value: 'legacy' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    expect(await screen.findByText('Legacy archive note')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Archive'));
+
+    await waitFor(() => expect(screen.queryByText('Legacy archive note')).not.toBeInTheDocument());
+    expect(screen.getByLabelText('Search wiki')).toHaveValue('');
+  });
+
+  it('renders an API load error instead of setup guidance when status cannot load', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('API offline'));
+
+    render(<App />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('API offline');
+    expect(screen.queryByText('Wiki hub not ready')).not.toBeInTheDocument();
   });
 });

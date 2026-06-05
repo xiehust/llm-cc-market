@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import Badge from './Badge';
 import { searchWiki, type SearchResultDto, type TopicDto } from '../api';
 
@@ -23,6 +23,27 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  const searchRequest = useRef(0);
+
+  useEffect(() => {
+    searchRequest.current += 1;
+    setQuery('');
+    setTopic('');
+    setResults([]);
+    setLoading(false);
+    setError(null);
+    setSearched(false);
+  }, [includeArchived]);
+
+  useEffect(() => {
+    if (!topic || topics.some((entry) => entry.slug === topic)) return;
+    searchRequest.current += 1;
+    setTopic('');
+    setResults([]);
+    setLoading(false);
+    setError(null);
+    setSearched(false);
+  }, [topic, topics]);
 
   async function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,14 +56,17 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
     setLoading(true);
     setError(null);
     setSearched(true);
+    const requestId = ++searchRequest.current;
     try {
       const response = await searchWiki(query.trim(), includeArchived, topic || undefined);
-      setResults(response.results ?? []);
+      if (searchRequest.current === requestId) setResults(response.results ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setResults([]);
+      if (searchRequest.current === requestId) {
+        setError(err instanceof Error ? err.message : String(err));
+        setResults([]);
+      }
     } finally {
-      setLoading(false);
+      if (searchRequest.current === requestId) setLoading(false);
     }
   }
 
@@ -72,7 +96,11 @@ export default function SearchPanel({ includeArchived, topics, onOpenDocument }:
         </div>
       </form>
 
-      {error ? <p className="inline-error">{error}</p> : null}
+      {error ? (
+        <p className="inline-error" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       {searched ? (
         <div className="search-results">

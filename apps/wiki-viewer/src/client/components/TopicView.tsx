@@ -62,7 +62,11 @@ export default function TopicView({ slug, includeArchived, onBack, onOpenDocumen
       </div>
 
       {loading ? <p className="loading-line">Loading topic shelf...</p> : null}
-      {error ? <p className="inline-error">{error}</p> : null}
+      {error ? (
+        <p className="inline-error" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       {detail ? (
         <>

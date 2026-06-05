@@ -72,7 +72,17 @@ export default function App() {
   }
 
   if (error && !status) {
-    return <SetupView error={error} />;
+    return (
+      <main className="setup-shell">
+        <section className="setup-panel load-error-panel">
+          <h1>Wiki viewer load failed</h1>
+          <p className="setup-copy">The frontend could not reach or read the local wiki API.</p>
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        </section>
+      </main>
+    );
   }
 
   if (!status?.ready) {
@@ -114,7 +124,11 @@ export default function App() {
 
       <main className="workspace">
         {loading ? <p className="loading-line">Refreshing shelf...</p> : null}
-        {error ? <p className="inline-error">{error}</p> : null}
+        {error ? (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        ) : null}
         {view.name === 'home' ? <ShelfHome topics={visibleTopics} onOpenTopic={openTopic} /> : null}
         {view.name === 'topic' ? (
           <TopicView
