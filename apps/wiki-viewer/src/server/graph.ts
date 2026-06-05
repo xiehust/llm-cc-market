@@ -257,10 +257,14 @@ function fullGraph(index: WikiIndex, query: GraphQuery): { nodes: GraphNode[]; e
     .filter((topic) => includeArchived || !topic.archived)
     .filter((topic) => !query.topic || topic.slug === query.topic);
   const visibleTopicIds = new Set(visibleTopics.map((topic) => topic.slug));
+  const indexedTopicIds = new Set(index.topics.map((topic) => topic.slug));
   const documents = index.documents
     .filter((document) => includeArchived || !document.archived)
     .filter((document) => !query.topic || document.topic === query.topic)
-    .filter((document) => visibleTopicIds.size === 0 || visibleTopicIds.has(document.topic))
+    .filter((document) => {
+      if (query.topic || indexedTopicIds.has(document.topic)) return visibleTopicIds.has(document.topic);
+      return true;
+    })
     .sort((left, right) => left.id.localeCompare(right.id));
   const documentIds = new Set(documents.map((document) => document.id));
 
@@ -438,7 +442,10 @@ function applyTypeFilters(nodes: GraphNode[], edges: GraphEdge[], query: GraphQu
 function applyCaps(nodes: GraphNode[], edges: GraphEdge[], query: GraphQuery): GraphResponse {
   const maxNodes = cleanLimit(query.maxNodes, DEFAULT_MAX_NODES);
   const maxEdges = cleanLimit(query.maxEdges, DEFAULT_MAX_EDGES);
-  const returnedNodes = nodes.slice(0, maxNodes);
+  const pinnedNode = query.documentId && maxNodes > 0 ? nodes.find((node) => node.id === query.documentId) : undefined;
+  const returnedNodes = pinnedNode
+    ? [pinnedNode, ...nodes.filter((node) => node.id !== pinnedNode.id).slice(0, maxNodes - 1)]
+    : nodes.slice(0, maxNodes);
   const returnedNodeIds = new Set(returnedNodes.map((node) => node.id));
   const edgesWithReturnedNodes = edges.filter((edge) => returnedNodeIds.has(edge.source) && returnedNodeIds.has(edge.target));
   const returnedEdges = edgesWithReturnedNodes.slice(0, maxEdges);

@@ -137,6 +137,33 @@ describe('buildKnowledgeGraph', () => {
     );
   });
 
+  it('does not leak documents from an archived topic query unless archived content is included', () => {
+    const index = indexFixture();
+    index.documents.push(
+      document({
+        id: 'topic-archived-doc',
+        topic: 'old-topic',
+        topicPath: 'topics/.archive/old-topic',
+        relativePath: 'topics/.archive/old-topic/wiki/topics/not-flagged.md',
+        absolutePath: '/tmp/wiki/topics/.archive/old-topic/wiki/topics/not-flagged.md',
+        title: 'Topic Archived Document',
+        archived: false,
+      }),
+    );
+
+    const activeOnly = buildKnowledgeGraph(index, { topic: 'old-topic' });
+    const withArchived = buildKnowledgeGraph(index, { topic: 'old-topic', includeArchived: true });
+
+    expect(activeOnly.nodes.some((node) => node.type === 'document')).toBe(false);
+    expect(activeOnly.nodes.some((node) => node.id === 'topic:old-topic')).toBe(false);
+    expect(withArchived.nodes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'topic-archived-doc', type: 'document' }),
+        expect.objectContaining({ id: 'topic:old-topic', type: 'topic' }),
+      ]),
+    );
+  });
+
   it('returns the selected document and direct neighbors for documentId depth one', () => {
     const graph = buildKnowledgeGraph(indexFixture(), { documentId: 'doc-a' });
 
@@ -151,6 +178,32 @@ describe('buildKnowledgeGraph', () => {
       'topic:ml-training',
     ]);
     expect(graph.edges.every((edge) => edge.source === 'doc-a' || edge.target === 'doc-a')).toBe(true);
+  });
+
+  it('keeps the selected document in a capped documentId neighborhood', () => {
+    const index = indexFixture();
+    index.documents = [
+      document({
+        id: 'z-selected',
+        title: 'Selected',
+        tags: ['cap-test'],
+        body: '[[Neighbor 0]] [[Neighbor 1]] [[Neighbor 2]] [[Neighbor 3]]',
+      }),
+      ...Array.from({ length: 4 }, (_, neighborIndex) =>
+        document({
+          id: `a-neighbor-${neighborIndex}`,
+          title: `Neighbor ${neighborIndex}`,
+          relativePath: `topics/ml-training/wiki/concepts/neighbor-${neighborIndex}.md`,
+          absolutePath: `/tmp/wiki/topics/ml-training/wiki/concepts/neighbor-${neighborIndex}.md`,
+          tags: ['cap-test'],
+        }),
+      ),
+    ];
+
+    const graph = buildKnowledgeGraph(index, { documentId: 'z-selected', maxNodes: 3 });
+
+    expect(graph.nodes.map((node) => node.id)).toContain('z-selected');
+    expect(graph.nodes).toHaveLength(3);
   });
 
   it('applies maxNodes and maxEdges caps with omitted counts', () => {
