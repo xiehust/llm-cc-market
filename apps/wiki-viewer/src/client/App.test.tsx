@@ -44,6 +44,52 @@ describe('App', () => {
     expect(screen.getByText('Training lessons')).toBeInTheDocument();
   });
 
+  it('opens the graph view from the header', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const textUrl = String(url);
+      if (textUrl.includes('/api/status')) {
+        return Response.json({ ready: true, hubPath: '/tmp/wiki', warnings: [], topicCount: 1, documentCount: 1 });
+      }
+      if (textUrl.includes('/api/topics')) {
+        return Response.json([
+          {
+            slug: 'ml-training',
+            description: 'Training lessons',
+            archived: false,
+            counts: { raw: 1, wiki: 0, proposals: 0, inventory: 0, output: 0, total: 1 },
+          },
+        ]);
+      }
+      if (textUrl.includes('/api/graph')) {
+        return Response.json({
+          nodes: [
+            {
+              id: 'ml-training/raw/notes/cuda.md',
+              type: 'document',
+              label: 'CUDA setup',
+              topic: 'ml-training',
+              documentId: 'ml-training/raw/notes/cuda.md',
+              documentKind: 'raw',
+              archived: false,
+              summary: 'Install keyring before CUDA packages.',
+              weight: 3,
+            },
+          ],
+          edges: [],
+          stats: { nodeCount: 1, edgeCount: 0, omittedNodeCount: 0, omittedEdgeCount: 0 },
+        });
+      }
+      return Response.json({});
+    }) as typeof fetch;
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Graph' }));
+
+    expect(await screen.findByText('Knowledge Graph')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'CUDA setup' })).toBeInTheDocument();
+  });
+
   it('renders setup guidance when the hub is missing', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
       Response.json({

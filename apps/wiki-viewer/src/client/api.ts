@@ -67,6 +67,50 @@ export interface SearchResponseDto {
   results: SearchResultDto[];
 }
 
+export type GraphNodeType = 'document' | 'topic' | 'tag' | 'source';
+export type GraphEdgeType = 'belongs_to_topic' | 'has_tag' | 'links_to' | 'cites_source' | 'same_tag';
+
+export interface GraphNodeDto {
+  id: string;
+  type: GraphNodeType;
+  label: string;
+  topic?: string;
+  documentId?: string;
+  documentKind?: DocumentKind;
+  archived?: boolean;
+  summary?: string;
+  weight: number;
+}
+
+export interface GraphEdgeDto {
+  id: string;
+  source: string;
+  target: string;
+  type: GraphEdgeType;
+  weight: number;
+  label?: string;
+}
+
+export interface GraphResponseDto {
+  nodes: GraphNodeDto[];
+  edges: GraphEdgeDto[];
+  stats: {
+    nodeCount: number;
+    edgeCount: number;
+    omittedNodeCount: number;
+    omittedEdgeCount: number;
+  };
+}
+
+export interface GraphQueryDto {
+  includeArchived?: boolean;
+  topic?: string;
+  documentId?: string;
+  depth?: number;
+  nodeTypes?: GraphNodeType[];
+  edgeTypes?: GraphEdgeType[];
+}
+
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
   if (!response.ok) {
@@ -109,4 +153,17 @@ export function searchWiki(q: string, includeArchived: boolean, topic?: string):
   if (includeArchived) params.set('includeArchived', 'true');
   if (topic) params.set('topic', topic);
   return fetchJson<SearchResponseDto>(`/api/search?${params.toString()}`);
+}
+
+export function getGraph(query: GraphQueryDto = {}): Promise<GraphResponseDto> {
+  const params = new URLSearchParams();
+  if (query.includeArchived) params.set('includeArchived', 'true');
+  if (query.topic) params.set('topic', query.topic);
+  if (query.documentId) params.set('documentId', query.documentId);
+  if (query.depth !== undefined) params.set('depth', String(query.depth));
+  if (query.nodeTypes?.length) params.set('nodeTypes', query.nodeTypes.join(','));
+  if (query.edgeTypes?.length) params.set('edgeTypes', query.edgeTypes.join(','));
+
+  const queryString = params.toString();
+  return fetchJson<GraphResponseDto>(queryString ? `/api/graph?${queryString}` : '/api/graph');
 }

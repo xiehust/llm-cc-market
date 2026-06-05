@@ -4,10 +4,12 @@ import SearchPanel from './components/SearchPanel';
 import SetupView from './components/SetupView';
 import TopicView from './components/TopicView';
 import ReaderView from './components/ReaderView';
+import GraphView from './components/GraphView';
 import { getStatus, getTopics, type StatusDto, type TopicDto } from './api';
 
 type ViewState =
   | { name: 'home' }
+  | { name: 'graph' }
   | { name: 'topic'; slug: string }
   | { name: 'reader'; id: string; previous: ViewState };
 
@@ -110,17 +112,22 @@ export default function App() {
             {displayedTopicCount} topics / {displayedDocumentCount} documents
           </p>
         </div>
-        <label className="archive-toggle">
-          <input
-            checked={includeArchived}
-            onChange={(event) => {
-              setIncludeArchived(event.target.checked);
-              setView({ name: 'home' });
-            }}
-            type="checkbox"
-          />
-          <span>Archive</span>
-        </label>
+        <div className="header-actions">
+          <button className="pixel-button" onClick={() => setView({ name: 'graph' })} type="button">
+            Graph
+          </button>
+          <label className="archive-toggle">
+            <input
+              checked={includeArchived}
+              onChange={(event) => {
+                setIncludeArchived(event.target.checked);
+                setView({ name: 'home' });
+              }}
+              type="checkbox"
+            />
+            <span>Archive</span>
+          </label>
+        </div>
       </header>
 
       {(status.warnings ?? []).length > 0 ? (
@@ -141,6 +148,14 @@ export default function App() {
           </p>
         ) : null}
         {view.name === 'home' ? <ShelfHome topics={visibleTopics} onOpenTopic={openTopic} /> : null}
+        {view.name === 'graph' ? (
+          <GraphView
+            includeArchived={includeArchived}
+            onBack={() => setView({ name: 'home' })}
+            onOpenDocument={openDocument}
+            topics={visibleTopics}
+          />
+        ) : null}
         {view.name === 'topic' ? (
           <TopicView
             includeArchived={includeArchived}
