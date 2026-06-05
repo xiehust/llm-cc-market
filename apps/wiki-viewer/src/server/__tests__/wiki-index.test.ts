@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -137,6 +137,68 @@ title: [broken
     });
   });
 
+  it('skips absolute registry topic paths outside the hub and warns', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'wiki-index-'));
+    tmpRoots.push(root);
+    const hubPath = join(root, 'wiki');
+    const externalTopic = join(root, 'outside-topic');
+    await mkdir(join(hubPath, 'topics', 'local', 'wiki', 'concepts'), { recursive: true });
+    await mkdir(join(externalTopic, 'wiki', 'concepts'), { recursive: true });
+    await writeFile(
+      join(hubPath, 'wikis.json'),
+      JSON.stringify({
+        wikis: {
+          hub: { path: '~/wiki', description: 'Hub' },
+          outside: { path: externalTopic, description: 'Outside topic', status: 'active' },
+          local: { path: 'topics/local', description: 'Local topic', status: 'active' },
+        },
+      }),
+      'utf8',
+    );
+    await writeFile(join(externalTopic, 'wiki', 'concepts', 'external.md'), '# External\n', 'utf8');
+    await writeFile(join(hubPath, 'topics', 'local', 'wiki', 'concepts', 'local.md'), '# Local\n', 'utf8');
+
+    const index = await buildWikiIndex(hubPath);
+
+    expect(index.status.ready).toBe(true);
+    expect(index.topics.map((topic) => topic.slug)).toContain('local');
+    expect(index.topics.map((topic) => topic.slug)).not.toContain('outside');
+    expect(index.documents.some((doc) => doc.absolutePath === join(externalTopic, 'wiki', 'concepts', 'external.md'))).toBe(false);
+    expect(index.documents.some((doc) => doc.relativePath.endsWith('topics/local/wiki/concepts/local.md'))).toBe(true);
+    expect(index.status.warnings.some((warning) => warning.includes('outside') && warning.includes('outside the hub'))).toBe(true);
+  });
+
+  it('skips relative registry topic paths that escape the hub and warns', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'wiki-index-'));
+    tmpRoots.push(root);
+    const hubPath = join(root, 'wiki');
+    const externalTopic = join(root, 'escaped-topic');
+    await mkdir(join(hubPath, 'topics', 'local', 'wiki', 'concepts'), { recursive: true });
+    await mkdir(join(externalTopic, 'wiki', 'concepts'), { recursive: true });
+    await writeFile(
+      join(hubPath, 'wikis.json'),
+      JSON.stringify({
+        wikis: {
+          hub: { path: '~/wiki', description: 'Hub' },
+          escaped: { path: '../escaped-topic', description: 'Escaped topic', status: 'active' },
+          local: { path: 'topics/local', description: 'Local topic', status: 'active' },
+        },
+      }),
+      'utf8',
+    );
+    await writeFile(join(externalTopic, 'wiki', 'concepts', 'escaped.md'), '# Escaped\n', 'utf8');
+    await writeFile(join(hubPath, 'topics', 'local', 'wiki', 'concepts', 'local.md'), '# Local\n', 'utf8');
+
+    const index = await buildWikiIndex(hubPath);
+
+    expect(index.status.ready).toBe(true);
+    expect(index.topics.map((topic) => topic.slug)).toContain('local');
+    expect(index.topics.map((topic) => topic.slug)).not.toContain('escaped');
+    expect(index.documents.some((doc) => doc.absolutePath === join(externalTopic, 'wiki', 'concepts', 'escaped.md'))).toBe(false);
+    expect(index.documents.some((doc) => doc.relativePath.endsWith('topics/local/wiki/concepts/local.md'))).toBe(true);
+    expect(index.status.warnings.some((warning) => warning.includes('escaped') && warning.includes('outside the hub'))).toBe(true);
+  });
+
   it('falls back to topic directories when wikis.json is invalid', async () => {
     const hubPath = await createTempHubWithoutRegistry();
     await writeFile(join(hubPath, 'wikis.json'), '{not valid json', 'utf8');
@@ -213,6 +275,38 @@ title: [broken
     expect(index.topics.map((topic) => topic.slug)).toContain('ml-training');
     expect(index.documents.some((doc) => doc.relativePath.endsWith('cuda-packages.md'))).toBe(true);
     expect(index.status.warnings.some((warning) => warning.includes('failed to read directory topics/.archive'))).toBe(true);
+  });
+
+  it('marks an existing unreadable hub root as not ready when permissions can be enforced', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'wiki-index-'));
+    tmpRoots.push(root);
+    const hubPath = join(root, 'wiki');
+    await mkdir(hubPath, { recursive: true });
+    await chmod(hubPath, 0o000);
+
+    let permissionsEnforced = false;
+    try {
+      await readdir(hubPath);
+    } catch {
+      permissionsEnforced = true;
+    }
+
+    if (!permissionsEnforced) {
+      await chmod(hubPath, 0o700).catch(() => undefined);
+      return;
+    }
+
+    let index: Awaited<ReturnType<typeof buildWikiIndex>>;
+    try {
+      index = await buildWikiIndex(hubPath);
+    } finally {
+      await chmod(hubPath, 0o700).catch(() => undefined);
+    }
+
+    expect(index.status.ready).toBe(false);
+    expect(index.topics).toEqual([]);
+    expect(index.documents).toEqual([]);
+    expect(index.status.warnings.some((warning) => warning.includes('hub path cannot be read'))).toBe(true);
   });
 
   it('continues with usable registry topics when the topics directory cannot be read during discovery', async () => {

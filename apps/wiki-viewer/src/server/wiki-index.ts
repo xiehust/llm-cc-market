@@ -1,5 +1,5 @@
-import { readdir, readFile, stat } from 'node:fs/promises';
-import { basename, isAbsolute, join, relative, sep } from 'node:path';
+import { readdir, readFile, realpath, stat } from 'node:fs/promises';
+import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { parseMarkdownFile, stringField, tagsField } from './markdown.js';
 import { stableId } from './path-utils.js';
 import type { DocumentKind, TopicCounts, WikiDocument, WikiIndex, WikiTopic } from './types.js';
@@ -78,7 +78,37 @@ function pathSegments(path: string): string[] {
 }
 
 function topicAbsolutePath(hubPath: string, topicPath: string): string {
-  return isAbsolute(topicPath) ? topicPath : join(hubPath, topicPath);
+  return isAbsolute(topicPath) ? resolve(topicPath) : resolve(hubPath, topicPath);
+}
+
+function isPathWithin(parentPath: string, childPath: string): boolean {
+  const childRelativePath = relative(parentPath, childPath);
+  return childRelativePath === '' || (!childRelativePath.startsWith('..') && !isAbsolute(childRelativePath));
+}
+
+async function containedTopicAbsolutePath(
+  hubPath: string,
+  hubRealPath: string,
+  slug: string,
+  topicPath: string,
+  warnings: string[],
+): Promise<string | undefined> {
+  const absolutePath = topicAbsolutePath(hubPath, topicPath);
+
+  if (await pathExists(absolutePath)) {
+    try {
+      const topicRealPath = await realpath(absolutePath);
+      if (isPathWithin(hubRealPath, topicRealPath)) return absolutePath;
+    } catch (error) {
+      warnings.push(`skipping registry topic ${slug}: failed to resolve path ${topicPath}: ${(error as Error).message}`);
+      return undefined;
+    }
+  } else if (isPathWithin(resolve(hubPath), absolutePath)) {
+    return absolutePath;
+  }
+
+  warnings.push(`skipping registry topic ${slug}: path ${topicPath} resolves outside the hub`);
+  return undefined;
 }
 
 function normalizeRegistryEntry(value: unknown): RegistryEntry {
@@ -252,6 +282,19 @@ export async function buildWikiIndex(hubPath: string, options: BuildOptions = {}
     return { status: { ready: false, hubPath, warnings: [`hub path is not a directory: ${hubPath}`] }, topics: [], documents: [] };
   }
 
+  try {
+    await readdir(hubPath);
+  } catch (error) {
+    return { status: { ready: false, hubPath, warnings: [`hub path cannot be read: ${(error as Error).message}`] }, topics: [], documents: [] };
+  }
+
+  let hubRealPath: string;
+  try {
+    hubRealPath = await realpath(hubPath);
+  } catch (error) {
+    return { status: { ready: false, hubPath, warnings: [`hub path cannot be resolved: ${(error as Error).message}`] }, topics: [], documents: [] };
+  }
+
   const registry = await readRegistry(hubPath, warnings);
   const topicEntries = await discoverTopics(hubPath, registry, warnings);
   const topics: WikiTopic[] = [];
@@ -262,7 +305,9 @@ export async function buildWikiIndex(hubPath: string, options: BuildOptions = {}
     const archived = entry.status === 'archived' || normalizePath(topicPath).includes('topics/.archive/');
     if (archived && !options.includeArchived) continue;
 
-    const absolutePath = topicAbsolutePath(hubPath, topicPath);
+    const absolutePath = await containedTopicAbsolutePath(hubPath, hubRealPath, slug, topicPath, warnings);
+    if (!absolutePath) continue;
+
     const counts = emptyCounts();
     const topicDocuments: WikiDocument[] = [];
 
