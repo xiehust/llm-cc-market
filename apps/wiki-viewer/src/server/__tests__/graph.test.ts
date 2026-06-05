@@ -164,6 +164,43 @@ describe('buildKnowledgeGraph', () => {
     );
   });
 
+  it('filters the graph to one active topic', () => {
+    const index = indexFixture();
+    index.topics.push(
+      topic({
+        slug: 'deployment',
+        description: 'Deployment lessons',
+        path: 'topics/deployment',
+        absolutePath: '/tmp/wiki/topics/deployment',
+      }),
+    );
+    index.documents = [
+      document({
+        id: 'training-doc',
+        title: 'Training Document',
+        tags: [],
+        body: '',
+      }),
+      document({
+        id: 'deployment-doc',
+        topic: 'deployment',
+        topicPath: 'topics/deployment',
+        relativePath: 'topics/deployment/wiki/concepts/deployment-doc.md',
+        absolutePath: '/tmp/wiki/topics/deployment/wiki/concepts/deployment-doc.md',
+        title: 'Deployment Document',
+        tags: [],
+        body: '',
+      }),
+    ];
+
+    const graph = buildKnowledgeGraph(index, { topic: 'deployment' });
+
+    expect(graph.nodes.filter((node) => node.type === 'document').map((node) => node.id)).toEqual(['deployment-doc']);
+    expect(graph.nodes.filter((node) => node.type === 'topic').map((node) => node.id)).toEqual(['topic:deployment']);
+    expect(graph.nodes.some((node) => node.id === 'training-doc')).toBe(false);
+    expect(graph.nodes.some((node) => node.id === 'topic:ml-training')).toBe(false);
+  });
+
   it('returns the selected document and direct neighbors for documentId depth one', () => {
     const graph = buildKnowledgeGraph(indexFixture(), { documentId: 'doc-a' });
 
@@ -178,6 +215,41 @@ describe('buildKnowledgeGraph', () => {
       'topic:ml-training',
     ]);
     expect(graph.edges.every((edge) => edge.source === 'doc-a' || edge.target === 'doc-a')).toBe(true);
+  });
+
+  it('respects explicit document neighborhood depth', () => {
+    const index = indexFixture();
+    index.documents = [
+      document({
+        id: 'root-doc',
+        title: 'Root Document',
+        tags: [],
+        body: 'Read [[Middle Document]].',
+      }),
+      document({
+        id: 'middle-doc',
+        title: 'Middle Document',
+        relativePath: 'topics/ml-training/wiki/concepts/middle-doc.md',
+        absolutePath: '/tmp/wiki/topics/ml-training/wiki/concepts/middle-doc.md',
+        tags: [],
+        body: 'Read [[Far Document]].',
+      }),
+      document({
+        id: 'far-doc',
+        title: 'Far Document',
+        relativePath: 'topics/ml-training/wiki/concepts/far-doc.md',
+        absolutePath: '/tmp/wiki/topics/ml-training/wiki/concepts/far-doc.md',
+        tags: [],
+        body: '',
+      }),
+    ];
+
+    const depthOne = buildKnowledgeGraph(index, { documentId: 'root-doc', depth: 1 });
+    const depthTwo = buildKnowledgeGraph(index, { documentId: 'root-doc', depth: 2 });
+
+    expect(depthOne.nodes.map((node) => node.id)).toContain('middle-doc');
+    expect(depthOne.nodes.map((node) => node.id)).not.toContain('far-doc');
+    expect(depthTwo.nodes.map((node) => node.id)).toContain('far-doc');
   });
 
   it('keeps the selected document in a capped documentId neighborhood', () => {
