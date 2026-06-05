@@ -63,6 +63,7 @@ describe('API routes', () => {
       expect(topic.documents.raw[0]).not.toHaveProperty('absolutePath');
 
       const docId = topic.documents.raw[0].id;
+      const nonNeighborDocId = topic.documents.proposal[0].id;
       const document = await fetch(`${baseUrl}/api/documents/${docId}`).then((res) => res.json());
       expect(document.title).toBe('Lessons Learned: CUDA setup');
       expect(document.body).toContain('Install keyring first');
@@ -82,7 +83,11 @@ describe('API routes', () => {
       expect(topicDocumentNodes.every((node: { topic: string }) => node.topic === 'ml-training')).toBe(true);
 
       const documentGraph = await fetch(`${baseUrl}/api/graph?documentId=${encodeURIComponent(docId)}&depth=1`).then((res) => res.json());
-      expect(documentGraph.nodes.some((node: { id: string }) => node.id === docId)).toBe(true);
+      const documentGraphNodeIds = documentGraph.nodes.map((node: { id: string }) => node.id);
+      expect(documentGraph.nodes.length).toBeLessThan(graph.nodes.length);
+      expect(documentGraphNodeIds).toEqual(expect.arrayContaining([docId, 'topic:ml-training', 'tag:cuda']));
+      expect(documentGraphNodeIds).not.toContain(nonNeighborDocId);
+      expect(documentGraph.edges.every((edge: { source: string; target: string }) => edge.source === docId || edge.target === docId)).toBe(true);
 
       const documentOnlyGraph = await fetch(`${baseUrl}/api/graph?nodeTypes=document`).then((res) => res.json());
       expect(documentOnlyGraph.nodes.length).toBeGreaterThan(0);
