@@ -85,14 +85,14 @@ function kindForPath(relativePath: string): DocumentKind {
   const normalized = normalizePath(relativePath);
   const name = basename(normalized);
 
+  if (normalized.includes('/config/') || name === 'config.md') return 'config';
+  if (normalized.includes('/log/') || normalized.includes('/logs/') || name === 'log.md' || name.endsWith('.log.md')) return 'log';
+  if (name === '_index.md' || name === 'index.md') return 'index';
   if (normalized.includes('/.librarian/proposals/')) return 'proposal';
   if (normalized.includes('/raw/')) return 'raw';
   if (normalized.includes('/wiki/')) return 'wiki';
   if (normalized.includes('/inventory/')) return 'inventory';
   if (normalized.includes('/output/')) return 'output';
-  if (normalized.includes('/config/') || name === 'config.md') return 'config';
-  if (normalized.includes('/log/') || normalized.includes('/logs/') || name === 'log.md' || name.endsWith('.log.md')) return 'log';
-  if (name === '_index.md' || name === 'index.md') return 'index';
   return 'other';
 }
 
@@ -154,7 +154,14 @@ async function readRegistry(hubPath: string, warnings: string[]): Promise<Regist
       ),
     };
   } catch (error) {
-    warnings.push(`wikis.json unavailable: ${(error as Error).message}`);
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') {
+      warnings.push(`wikis.json missing: ${(error as Error).message}`);
+    } else if (error instanceof SyntaxError) {
+      warnings.push(`wikis.json invalid: ${(error as Error).message}`);
+    } else {
+      warnings.push(`wikis.json unavailable: ${(error as Error).message}`);
+    }
     return { wikis: {} };
   }
 }
@@ -199,7 +206,7 @@ function incrementCounts(counts: TopicCounts, kind: DocumentKind): void {
   if (kind === 'proposal') counts.proposals += 1;
   if (kind === 'inventory') counts.inventory += 1;
   if (kind === 'output') counts.output += 1;
-  counts.total += 1;
+  if (kind === 'raw' || kind === 'wiki' || kind === 'proposal' || kind === 'inventory' || kind === 'output') counts.total += 1;
 }
 
 function latestUpdate(documents: WikiDocument[]): string | undefined {
@@ -236,7 +243,14 @@ export async function buildWikiIndex(hubPath: string, options: BuildOptions = {}
 
     for (const filePath of await walkMarkdown(absolutePath)) {
       const relativePath = relative(hubPath, filePath);
-      const content = await readFile(filePath, 'utf8');
+      let content: string;
+      try {
+        content = await readFile(filePath, 'utf8');
+      } catch (error) {
+        warnings.push(`failed to read markdown file ${relativePath}: ${(error as Error).message}`);
+        continue;
+      }
+
       const parsed = parseMarkdownFile(content);
       const kind = kindForPath(relativePath);
       const document: WikiDocument = {
