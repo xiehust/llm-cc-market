@@ -1,10 +1,10 @@
 # LLM CC Market
 
-A Claude Code plugin marketplace for LLM fine-tuning, deployment, and knowledge cultivation workflows.
+A Claude Code and Codex plugin marketplace for LLM fine-tuning, deployment, and knowledge cultivation workflows.
 
 ## Overview
 
-LLM CC Market provides reusable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that simplify model fine-tuning, RLHF training, deployment, and domain knowledge management. It wraps production-grade frameworks behind guided workflows so you can go from raw data to a deployed model with natural language commands — and automatically accumulate domain expertise along the way.
+LLM CC Market provides reusable skills for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and Codex that simplify model fine-tuning, RLHF training, deployment, and domain knowledge management. It wraps production-grade frameworks behind guided workflows so you can go from raw data to a deployed model with natural language commands — and automatically accumulate domain expertise along the way.
 
 ## Available Plugins
 
@@ -28,7 +28,7 @@ Auto-cultivate domain knowledge from your Claude Code sessions into a structured
 | llm-wiki interop | Compatible format — install llm-wiki for compile/query/output |
 | Blog publishing | Synthesize a topic into a deep-dive post and publish to GitHub Discussions — optionally illustrated with fireworks-tech-graph architecture/flow diagrams |
 
-**Commands:**
+**Claude Code commands:**
 
 | Command | Description |
 |---------|-------------|
@@ -37,6 +37,8 @@ Auto-cultivate domain knowledge from your Claude Code sessions into a structured
 | `/cc-knowledge:review` | Accept/reject pending article modification proposals |
 | `/cc-knowledge:status` | Show cultivation dashboard (topics, counts, pending) |
 | `/cc-knowledge:blog` | Synthesize a topic into a long-form blog and publish to GitHub Discussions (first run preflight; default dry-run; optional `--diagrams`/`--no-diagrams`) |
+
+**Codex skills:** `cc-knowledge-init`, `cc-knowledge-cultivate`, `cc-knowledge-review`, `cc-knowledge-status`, and `wiki-blog`.
 
 Documentation: [English](plugins/cc-knowledge/docs/README.md) | [中文](plugins/cc-knowledge/docs/README.zh-CN.md)
 
@@ -80,6 +82,8 @@ Fine-tune and deploy LLMs using [ms-swift](https://github.com/modelscope/ms-swif
 
 ## Installation
 
+### Claude Code
+
 Install plugins directly from GitHub:
 
 ```bash
@@ -95,6 +99,19 @@ git clone https://github.com/xiehust/llm-cc-market.git
 claude plugin add --from ./llm-cc-market/plugins/finetune
 claude plugin add --from ./llm-cc-market/plugins/cc-knowledge
 ```
+
+### Codex
+
+Clone the repo, register the repo-local marketplace, then install one or both plugins:
+
+```bash
+git clone https://github.com/xiehust/llm-cc-market.git
+codex plugin marketplace add ./llm-cc-market
+codex plugin add finetune@llm-cc-market
+codex plugin add cc-knowledge@llm-cc-market
+```
+
+Codex loads the plugin skills. The `cc-knowledge` SessionEnd/SessionStart hooks and `/cc-knowledge:*` slash commands are Claude Code integrations; use the Codex skills (`cc-knowledge-init`, `cc-knowledge-cultivate`, `cc-knowledge-review`, `cc-knowledge-status`) for manual workflows.
 
 Then set up the training environment (choose one or both):
 
@@ -114,20 +131,27 @@ Each setup script installs [uv](https://github.com/astral-sh/uv), creates an iso
 
 ```
 llm-cc-market/
+├── .agents/
+│   └── plugins/
+│       └── marketplace.json          # Codex marketplace registry
 ├── .claude-plugin/
-│   └── marketplace.json              # Marketplace registry
+│   └── marketplace.json              # Claude marketplace registry
 └── plugins/
     ├── cc-knowledge/
+    │   ├── .codex-plugin/
+    │   │   └── plugin.json           # Codex plugin metadata
     │   ├── .claude-plugin/
-    │   │   └── plugin.json           # Plugin metadata
+    │   │   └── plugin.json           # Claude plugin metadata
     │   ├── hooks/hooks.json          # SessionEnd + SessionStart hooks
     │   ├── commands/                 # init, cultivate, review, status
-    │   ├── skills/cultivator-engine/ # Extraction pipeline + references
+    │   ├── skills/                   # Codex skills + extraction pipeline
     │   ├── scripts/                  # Hook scripts + skill regen
     │   └── docs/                     # README.md (EN) + README.zh-CN.md
     └── finetune/
+        ├── .codex-plugin/
+        │   └── plugin.json           # Codex plugin metadata
         ├── .claude-plugin/
-        │   └── plugin.json           # Plugin metadata
+        │   └── plugin.json           # Claude plugin metadata
         └── skills/
             ├── ms-swift/
             │   ├── SKILL.md           # ms-swift skill guide

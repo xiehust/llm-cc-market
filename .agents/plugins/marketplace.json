@@ -1,0 +1,32 @@
+{
+  "name": "llm-cc-market",
+  "interface": {
+    "displayName": "LLM CC Market"
+  },
+  "plugins": [
+    {
+      "name": "finetune",
+      "source": {
+        "source": "local",
+        "path": "./plugins/finetune"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "AI"
+    },
+    {
+      "name": "cc-knowledge",
+      "source": {
+        "source": "local",
+        "path": "./plugins/cc-knowledge"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

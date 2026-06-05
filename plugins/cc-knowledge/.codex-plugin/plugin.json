@@ -1,0 +1,38 @@
+{
+  "name": "cc-knowledge",
+  "version": "0.3.0",
+  "description": "Cultivate durable development lessons into llm-wiki-compatible knowledge.",
+  "author": {
+    "name": "River"
+  },
+  "homepage": "https://github.com/xiehust/llm-cc-market",
+  "repository": "https://github.com/xiehust/llm-cc-market",
+  "keywords": [
+    "knowledge",
+    "wiki",
+    "llm-wiki",
+    "lessons",
+    "codex",
+    "blog",
+    "github-discussions"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "CC Knowledge",
+    "shortDescription": "Extract lessons and publish wiki-backed knowledge.",
+    "longDescription": "Use Codex skills to extract reusable lessons into an llm-wiki-compatible hub and synthesize cultivated wiki topics into long-form GitHub Discussions posts. Claude-specific hooks and slash commands remain available through the Claude plugin metadata.",
+    "developerName": "River",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/xiehust/llm-cc-market",
+    "defaultPrompt": [
+      "Extract durable lessons from this session.",
+      "Publish a blog post from my wiki topic.",
+      "Review pending knowledge proposals."
+    ],
+    "brandColor": "#2F855A"
+  }
+}

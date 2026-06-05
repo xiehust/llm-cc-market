@@ -1,0 +1,39 @@
+{
+  "name": "finetune",
+  "version": "0.0.1",
+  "description": "Model fine-tuning and deployment skills using ms-swift and LLaMA-Factory.",
+  "author": {
+    "name": "River"
+  },
+  "homepage": "https://github.com/xiehust/llm-cc-market",
+  "repository": "https://github.com/xiehust/llm-cc-market",
+  "keywords": [
+    "fine-tuning",
+    "llm",
+    "ms-swift",
+    "llamafactory",
+    "lora",
+    "rlhf",
+    "deployment",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Finetune",
+    "shortDescription": "Fine-tune, align, evaluate, and deploy LLMs.",
+    "longDescription": "Use guided Codex skills for ms-swift and LLaMA-Factory workflows, including SFT, LoRA, QLoRA, RLHF, GRPO, DPO, evaluation, quantization, and OpenAI-compatible deployment.",
+    "developerName": "River",
+    "category": "AI",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/xiehust/llm-cc-market",
+    "defaultPrompt": [
+      "Fine-tune Qwen with LoRA using ms-swift.",
+      "Create a LLaMA-Factory QLoRA training config.",
+      "Deploy my fine-tuned model with vLLM."
+    ],
+    "brandColor": "#2563EB"
+  }
+}
