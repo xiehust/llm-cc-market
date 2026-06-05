@@ -159,4 +159,44 @@ title: [broken
     expect(index.documents.some((doc) => doc.relativePath.endsWith('unreadable.md'))).toBe(false);
     expect(index.status.warnings.some((warning) => warning.includes('failed to read markdown file'))).toBe(true);
   });
+
+  it('classifies documents from the topic-relative path when the topic slug matches a content bucket', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'wiki-index-'));
+    tmpRoots.push(root);
+    const hubPath = join(root, 'wiki');
+    await mkdir(join(hubPath, 'topics', 'raw', 'wiki', 'concepts'), { recursive: true });
+    await writeFile(
+      join(hubPath, 'wikis.json'),
+      JSON.stringify({
+        wikis: {
+          hub: { path: '~/wiki', description: 'Hub' },
+          raw: { path: 'topics/raw', description: 'Raw slug topic', status: 'active' },
+        },
+      }),
+      'utf8',
+    );
+    await writeFile(
+      join(hubPath, 'topics', 'raw', 'wiki', 'concepts', 'article.md'),
+      `---
+title: "Article"
+---
+# Article
+`,
+      'utf8',
+    );
+
+    const index = await buildWikiIndex(hubPath);
+
+    expect(index.documents.find((doc) => doc.relativePath.endsWith('topics/raw/wiki/concepts/article.md'))).toMatchObject({
+      topic: 'raw',
+      kind: 'wiki',
+      category: 'concept',
+      relativePath: join('topics', 'raw', 'wiki', 'concepts', 'article.md'),
+    });
+    expect(index.topics.find((topic) => topic.slug === 'raw')?.counts).toMatchObject({
+      raw: 0,
+      wiki: 1,
+      total: 1,
+    });
+  });
 });

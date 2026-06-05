@@ -66,6 +66,10 @@ function normalizePath(path: string): string {
   return path.split(sep).join('/');
 }
 
+function pathSegments(path: string): string[] {
+  return normalizePath(path).split('/').filter(Boolean);
+}
+
 function topicAbsolutePath(hubPath: string, topicPath: string): string {
   return isAbsolute(topicPath) ? topicPath : join(hubPath, topicPath);
 }
@@ -81,34 +85,34 @@ function normalizeRegistryEntry(value: unknown): RegistryEntry {
   };
 }
 
-function kindForPath(relativePath: string): DocumentKind {
-  const normalized = normalizePath(relativePath);
-  const name = basename(normalized);
+function kindForPath(topicRelativePath: string): DocumentKind {
+  const segments = pathSegments(topicRelativePath);
+  const name = segments.at(-1) ?? basename(normalizePath(topicRelativePath));
 
-  if (normalized.includes('/config/') || name === 'config.md') return 'config';
-  if (normalized.includes('/log/') || normalized.includes('/logs/') || name === 'log.md' || name.endsWith('.log.md')) return 'log';
+  if (segments.includes('config') || name === 'config.md') return 'config';
+  if (segments.includes('log') || segments.includes('logs') || name === 'log.md' || name.endsWith('.log.md')) return 'log';
   if (name === '_index.md' || name === 'index.md') return 'index';
-  if (normalized.includes('/.librarian/proposals/')) return 'proposal';
-  if (normalized.includes('/raw/')) return 'raw';
-  if (normalized.includes('/wiki/')) return 'wiki';
-  if (normalized.includes('/inventory/')) return 'inventory';
-  if (normalized.includes('/output/')) return 'output';
+  if (segments[0] === '.librarian' && segments[1] === 'proposals') return 'proposal';
+  if (segments[0] === 'raw') return 'raw';
+  if (segments[0] === 'wiki') return 'wiki';
+  if (segments[0] === 'inventory') return 'inventory';
+  if (segments[0] === 'output') return 'output';
   return 'other';
 }
 
-function categoryFor(kind: DocumentKind, relativePath: string, data: Record<string, unknown>): string | undefined {
+function categoryFor(kind: DocumentKind, topicRelativePath: string, data: Record<string, unknown>): string | undefined {
   const category = stringField(data, 'category');
   if (category) return category;
 
   const type = stringField(data, 'type');
   if (type) return type;
 
-  const normalized = normalizePath(relativePath);
-  if (normalized.includes('/wiki/concepts/')) return 'concept';
-  if (normalized.includes('/wiki/topics/')) return 'topic';
-  if (normalized.includes('/wiki/references/')) return 'reference';
-  if (normalized.includes('/wiki/theses/')) return 'thesis';
-  if (normalized.includes('/raw/notes/')) return 'notes';
+  const segments = pathSegments(topicRelativePath);
+  if (segments[0] === 'wiki' && segments[1] === 'concepts') return 'concept';
+  if (segments[0] === 'wiki' && segments[1] === 'topics') return 'topic';
+  if (segments[0] === 'wiki' && segments[1] === 'references') return 'reference';
+  if (segments[0] === 'wiki' && segments[1] === 'theses') return 'thesis';
+  if (segments[0] === 'raw' && segments[1] === 'notes') return 'notes';
   if (kind === 'proposal') return 'proposal';
   return undefined;
 }
@@ -243,6 +247,7 @@ export async function buildWikiIndex(hubPath: string, options: BuildOptions = {}
 
     for (const filePath of await walkMarkdown(absolutePath)) {
       const relativePath = relative(hubPath, filePath);
+      const topicRelativePath = relative(absolutePath, filePath);
       let content: string;
       try {
         content = await readFile(filePath, 'utf8');
@@ -252,7 +257,7 @@ export async function buildWikiIndex(hubPath: string, options: BuildOptions = {}
       }
 
       const parsed = parseMarkdownFile(content);
-      const kind = kindForPath(relativePath);
+      const kind = kindForPath(topicRelativePath);
       const document: WikiDocument = {
         id: stableId([slug, relativePath]),
         topic: slug,
@@ -260,7 +265,7 @@ export async function buildWikiIndex(hubPath: string, options: BuildOptions = {}
         absolutePath: filePath,
         relativePath,
         kind,
-        category: categoryFor(kind, relativePath, parsed.data),
+        category: categoryFor(kind, topicRelativePath, parsed.data),
         title: stringField(parsed.data, 'title') ?? titleFromBody(parsed.body, filePath),
         summary: stringField(parsed.data, 'summary'),
         tags: tagsField(parsed.data),
