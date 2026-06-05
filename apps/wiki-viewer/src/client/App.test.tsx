@@ -151,6 +151,23 @@ describe('App', () => {
     expect(screen.getByText('CUDA note')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open document' })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByLabelText('topic'));
+    fireEvent.click(screen.getByLabelText('tag'));
+    fireEvent.click(screen.getByLabelText('source'));
+    expect(screen.getByLabelText('document')).toBeChecked();
+    expect(screen.getByLabelText('document')).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('document'));
+    expect(screen.getByLabelText('document')).toBeChecked();
+
+    fireEvent.click(screen.getByLabelText('has tag'));
+    fireEvent.click(screen.getByLabelText('links to'));
+    fireEvent.click(screen.getByLabelText('cites source'));
+    fireEvent.click(screen.getByLabelText('same tag'));
+    expect(screen.getByLabelText('belongs to topic')).toBeChecked();
+    expect(screen.getByLabelText('belongs to topic')).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('belongs to topic'));
+    expect(screen.getByLabelText('belongs to topic')).toBeChecked();
+
     fireEvent.change(screen.getByLabelText('Graph topic'), { target: { value: 'ml-training' } });
     await waitFor(() =>
       expect(fetchMock.mock.calls.some(([calledUrl]) => String(calledUrl).includes('topic=ml-training'))).toBe(true),

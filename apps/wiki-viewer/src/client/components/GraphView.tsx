@@ -79,11 +79,19 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
   }, [graph, selectedNode]);
 
   function toggleNodeType(type: GraphNodeType, checked: boolean) {
-    setNodeTypes((current) => (checked ? [...current, type] : current.filter((existing) => existing !== type)));
+    setNodeTypes((current) => {
+      if (checked) return current.includes(type) ? current : [...current, type];
+      if (current.length <= 1 && current.includes(type)) return current;
+      return current.filter((existing) => existing !== type);
+    });
   }
 
   function toggleEdgeType(type: GraphEdgeType, checked: boolean) {
-    setEdgeTypes((current) => (checked ? [...current, type] : current.filter((existing) => existing !== type)));
+    setEdgeTypes((current) => {
+      if (checked) return current.includes(type) ? current : [...current, type];
+      if (current.length <= 1 && current.includes(type)) return current;
+      return current.filter((existing) => existing !== type);
+    });
   }
 
   return (
@@ -124,6 +132,7 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
               <label className="graph-check" key={type}>
                 <input
                   checked={nodeTypes.includes(type)}
+                  disabled={nodeTypes.length === 1 && nodeTypes.includes(type)}
                   onChange={(event) => toggleNodeType(type, event.target.checked)}
                   type="checkbox"
                 />
@@ -139,6 +148,7 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
               <label className="graph-check" key={type}>
                 <input
                   checked={edgeTypes.includes(type)}
+                  disabled={edgeTypes.length === 1 && edgeTypes.includes(type)}
                   onChange={(event) => toggleEdgeType(type, event.target.checked)}
                   type="checkbox"
                 />
