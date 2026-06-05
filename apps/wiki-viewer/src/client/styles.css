@@ -62,6 +62,14 @@ code {
   padding: 22px;
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .app-header h1,
 .setup-panel h1 {
   margin: 0;
@@ -177,7 +185,8 @@ code {
 
 .pixel-button:focus-visible,
 .topic-book:focus-visible,
-.document-card:focus-visible {
+.document-card:focus-visible,
+.graph-node:focus-visible {
   outline: 4px solid #fff24a;
   outline-offset: 5px;
   box-shadow:
@@ -478,6 +487,260 @@ code {
   overflow-wrap: anywhere;
 }
 
+.graph-view {
+  min-width: 0;
+}
+
+.graph-controls,
+.graph-shell,
+.graph-detail-panel {
+  border: 4px solid #211a18;
+  background: #fff8e8;
+  box-shadow: 8px 8px 0 #211a18;
+}
+
+.graph-controls {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 14px;
+  align-items: stretch;
+  margin-bottom: 22px;
+  padding: 14px;
+}
+
+.graph-topic-control {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  font-weight: 900;
+}
+
+.graph-topic-control select,
+.graph-controls fieldset {
+  min-width: 0;
+  border: 3px solid #211a18;
+  background: #fffdf5;
+  box-shadow: 3px 3px 0 #211a18 inset;
+}
+
+.graph-topic-control select {
+  min-height: 44px;
+  border-radius: 0;
+  padding: 0 10px;
+}
+
+.graph-controls fieldset {
+  margin: 0;
+  padding: 10px;
+}
+
+.graph-controls legend {
+  padding: 0 6px;
+  font-weight: 950;
+}
+
+.graph-check-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.graph-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  border: 2px solid #211a18;
+  background: #d7d1bb;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.graph-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: #2f7d57;
+}
+
+.graph-topic-control select:focus-visible,
+.graph-check input:focus-visible {
+  outline: 4px solid #fff24a;
+  outline-offset: 4px;
+  box-shadow:
+    3px 3px 0 #211a18 inset,
+    0 0 0 7px #1f5fbf;
+}
+
+.graph-shell {
+  min-width: 0;
+  padding: 16px;
+}
+
+.graph-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.graph-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 18px;
+  align-items: start;
+  min-width: 0;
+}
+
+.graph-canvas-frame {
+  min-width: 0;
+  border: 4px solid #211a18;
+  background:
+    linear-gradient(90deg, rgba(33, 26, 24, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(33, 26, 24, 0.08) 1px, transparent 1px),
+    #f7e8bf;
+  background-size: 24px 24px;
+  box-shadow: 6px 6px 0 #211a18;
+  overflow: hidden;
+}
+
+.graph-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 360px;
+}
+
+.graph-edge {
+  stroke: #5c3528;
+  stroke-linecap: square;
+  stroke-width: 4;
+}
+
+.graph-edge-links_to,
+.graph-edge-cites_source {
+  stroke: #306c9f;
+}
+
+.graph-edge-same_tag {
+  stroke: #7c579b;
+  stroke-dasharray: 10 9;
+}
+
+.graph-edge.is-dimmed {
+  opacity: 0.18;
+}
+
+.graph-node {
+  cursor: pointer;
+  outline: none;
+}
+
+.graph-node-box {
+  stroke: #211a18;
+  stroke-width: 4;
+  filter: drop-shadow(5px 5px 0 #211a18);
+}
+
+.graph-node-document .graph-node-box {
+  fill: #72b7d8;
+}
+
+.graph-node-topic .graph-node-box {
+  fill: #79bf73;
+}
+
+.graph-node-tag .graph-node-box {
+  fill: #f3bb4b;
+}
+
+.graph-node-source .graph-node-box {
+  fill: #b99ad8;
+}
+
+.graph-node-label,
+.graph-node-type {
+  fill: #211a18;
+  font-weight: 950;
+  pointer-events: none;
+}
+
+.graph-node-label {
+  font-size: 17px;
+}
+
+.graph-node-type {
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.graph-node.is-selected .graph-node-box {
+  stroke-width: 7;
+  filter:
+    drop-shadow(5px 5px 0 #211a18)
+    drop-shadow(0 0 0 #fff24a);
+}
+
+.graph-node.is-dimmed {
+  opacity: 0.34;
+}
+
+.graph-node:hover .graph-node-box {
+  stroke-width: 6;
+}
+
+.graph-detail-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.graph-detail-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.graph-detail-summary {
+  margin: 0;
+  border: 3px solid #211a18;
+  background: #fffdf5;
+  box-shadow: 4px 4px 0 #211a18;
+  padding: 10px;
+  color: #342722;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.graph-detail-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+}
+
+.graph-detail-facts div {
+  min-width: 0;
+  border: 3px solid #211a18;
+  background: #d7d1bb;
+  box-shadow: 3px 3px 0 #211a18;
+  padding: 8px;
+}
+
+.graph-detail-facts dt {
+  color: #5e432f;
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.graph-detail-facts dd {
+  margin: 2px 0 0;
+  font-weight: 950;
+}
+
 .reader-layout {
   display: grid;
   grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);
@@ -674,6 +937,15 @@ code {
     flex-direction: column;
   }
 
+  .header-actions {
+    justify-content: stretch;
+  }
+
+  .header-actions .pixel-button,
+  .header-actions .archive-toggle {
+    width: 100%;
+  }
+
   .app-header h1,
   .setup-panel h1 {
     font-size: 1.7rem;
@@ -686,9 +958,21 @@ code {
   .search-controls,
   .pagination-bar,
   .result-card,
+  .graph-controls,
+  .graph-workbench,
   .reader-layout,
   .checked-paths li {
     grid-template-columns: 1fr;
+  }
+
+  .graph-shell,
+  .graph-controls,
+  .graph-detail-panel {
+    box-shadow: 5px 5px 0 #211a18;
+  }
+
+  .graph-canvas {
+    min-height: 280px;
   }
 
   .pagination-bar,

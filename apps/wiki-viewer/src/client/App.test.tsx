@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 
@@ -44,11 +44,17 @@ describe('App', () => {
     expect(screen.getByText('Training lessons')).toBeInTheDocument();
   });
 
-  it('opens the graph view from the header', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+  it('selects graph nodes, filters by topic, and opens the selected document', async () => {
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn(),
+    });
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    fetchMock.mockImplementation(async (url) => {
       const textUrl = String(url);
       if (textUrl.includes('/api/status')) {
-        return Response.json({ ready: true, hubPath: '/tmp/wiki', warnings: [], topicCount: 1, documentCount: 1 });
+        return Response.json({ ready: true, hubPath: '/tmp/wiki', warnings: [], topicCount: 2, documentCount: 2 });
       }
       if (textUrl.includes('/api/topics')) {
         return Response.json([
@@ -58,21 +64,33 @@ describe('App', () => {
             archived: false,
             counts: { raw: 1, wiki: 0, proposals: 0, inventory: 0, output: 0, total: 1 },
           },
+          {
+            slug: 'ops',
+            description: 'Operations lessons',
+            archived: false,
+            counts: { raw: 1, wiki: 0, proposals: 0, inventory: 0, output: 0, total: 1 },
+          },
         ]);
       }
       if (textUrl.includes('/api/graph')) {
         return Response.json({
           nodes: [
             {
-              id: 'ml-training/raw/notes/cuda.md',
+              id: 'doc-cuda',
               type: 'document',
               label: 'CUDA setup',
               topic: 'ml-training',
-              documentId: 'ml-training/raw/notes/cuda.md',
+              documentId: 'doc-cuda',
               documentKind: 'raw',
               archived: false,
-              summary: 'Install keyring before CUDA packages.',
+              summary: 'CUDA note',
               weight: 3,
+            },
+            {
+              id: 'topic:ml-training',
+              type: 'topic',
+              label: 'ml-training',
+              weight: 4,
             },
             {
               id: 'tag:cuda',
@@ -81,21 +99,69 @@ describe('App', () => {
               weight: 2,
             },
           ],
-          edges: [],
-          stats: { nodeCount: 2, edgeCount: 0, omittedNodeCount: 0, omittedEdgeCount: 0 },
+          edges: [
+            {
+              id: 'edge-topic',
+              source: 'doc-cuda',
+              target: 'topic:ml-training',
+              type: 'belongs_to_topic',
+              weight: 1,
+              label: 'topic',
+            },
+            {
+              id: 'edge-tag',
+              source: 'doc-cuda',
+              target: 'tag:cuda',
+              type: 'has_tag',
+              weight: 1,
+              label: 'tag',
+            },
+          ],
+          stats: { nodeCount: 3, edgeCount: 2, omittedNodeCount: 0, omittedEdgeCount: 0 },
+        });
+      }
+      if (textUrl.includes('/api/documents/doc-cuda')) {
+        return Response.json({
+          id: 'doc-cuda',
+          topic: 'ml-training',
+          relativePath: 'raw/notes/cuda.md',
+          kind: 'raw',
+          title: 'CUDA setup',
+          summary: 'CUDA note',
+          tags: ['cuda'],
+          dates: { ingested: '2026-06-05' },
+          confidence: 'high',
+          archived: false,
+          warnings: [],
+          body: '# CUDA setup\n\nCUDA body text.',
         });
       }
       return Response.json({});
-    }) as typeof fetch;
+    });
 
     render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Graph' }));
 
     expect(await screen.findByText('Knowledge Graph')).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'CUDA setup' })).toBeInTheDocument();
-    expect(await screen.findByText('cuda')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'cuda' })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Select CUDA setup' }));
+    expect(screen.getByText('CUDA note')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open document' })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Graph topic'), { target: { value: 'ml-training' } });
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([calledUrl]) => String(calledUrl).includes('topic=ml-training'))).toBe(true),
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Select cuda' }));
+    expect(within(screen.getByLabelText('Selected graph node')).getByText('tag')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open document' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select CUDA setup' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Open document' }));
+
+    expect(await screen.findByRole('heading', { name: 'CUDA setup' })).toBeInTheDocument();
+    expect(screen.getByText('CUDA body text.')).toBeInTheDocument();
   });
 
   it('renders setup guidance when the hub is missing', async () => {
