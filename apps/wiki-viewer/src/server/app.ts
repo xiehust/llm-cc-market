@@ -1,4 +1,5 @@
 import express, { type ErrorRequestHandler, type NextFunction, type Request, type Response } from 'express';
+import { buildKnowledgeGraph, type GraphEdgeType, type GraphNodeType } from './graph.js';
 import { resolveHubPath } from './hub-resolver.js';
 import { searchDocuments, type SearchResult } from './search.js';
 import type { WikiDocument, WikiIndex, WikiTopic } from './types.js';
@@ -19,6 +20,21 @@ function includeArchivedParam(value: unknown): boolean {
 
 function textParam(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function numberParam(value: unknown): number | undefined {
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function listParam<T extends string>(value: unknown): T[] | undefined {
+  if (typeof value !== 'string') return undefined;
+  const values = value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean) as T[];
+  return values.length > 0 ? values : undefined;
 }
 
 function wrapRoute(handler: (req: Request, res: Response) => Promise<void>): (req: Request, res: Response, next: NextFunction) => void {
@@ -164,6 +180,24 @@ export function createApp(options: AppOptions = {}): express.Express {
       const index = await loadIndex(includeArchived);
       const results = searchDocuments(index.documents, { q, topic, includeArchived }).map(serializeSearchResult);
       res.json({ results });
+    }),
+  );
+
+  app.get(
+    '/api/graph',
+    wrapRoute(async (req, res) => {
+      const includeArchived = includeArchivedParam(req.query.includeArchived);
+      const index = await loadIndex(includeArchived);
+      res.json(
+        buildKnowledgeGraph(index, {
+          includeArchived,
+          topic: textParam(req.query.topic),
+          documentId: textParam(req.query.documentId),
+          depth: numberParam(req.query.depth) ?? 1,
+          nodeTypes: listParam<GraphNodeType>(req.query.nodeTypes),
+          edgeTypes: listParam<GraphEdgeType>(req.query.edgeTypes),
+        }),
+      );
     }),
   );
 

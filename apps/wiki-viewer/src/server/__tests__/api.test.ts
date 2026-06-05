@@ -70,6 +70,24 @@ describe('API routes', () => {
       expect(document).not.toHaveProperty('topicPath');
       expect(document).not.toHaveProperty('absolutePath');
 
+      const graph = await fetch(`${baseUrl}/api/graph`).then((res) => res.json());
+      expect(graph.nodes.length).toBeGreaterThan(0);
+      expect(graph.edges.length).toBeGreaterThan(0);
+      expect(JSON.stringify(graph)).not.toContain(hubPath);
+      expect(JSON.stringify(graph)).not.toContain('absolutePath');
+
+      const topicGraph = await fetch(`${baseUrl}/api/graph?topic=ml-training`).then((res) => res.json());
+      const topicDocumentNodes = topicGraph.nodes.filter((node: { type: string }) => node.type === 'document');
+      expect(topicDocumentNodes.length).toBeGreaterThan(0);
+      expect(topicDocumentNodes.every((node: { topic: string }) => node.topic === 'ml-training')).toBe(true);
+
+      const documentGraph = await fetch(`${baseUrl}/api/graph?documentId=${encodeURIComponent(docId)}&depth=1`).then((res) => res.json());
+      expect(documentGraph.nodes.some((node: { id: string }) => node.id === docId)).toBe(true);
+
+      const documentOnlyGraph = await fetch(`${baseUrl}/api/graph?nodeTypes=document`).then((res) => res.json());
+      expect(documentOnlyGraph.nodes.length).toBeGreaterThan(0);
+      expect(documentOnlyGraph.nodes.every((node: { type: string }) => node.type === 'document')).toBe(true);
+
       const missing = await fetch(`${baseUrl}/api/topics/missing-topic`);
       expect(missing.status).toBe(404);
 
