@@ -1,4 +1,5 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { resolveHubPath } from '../hub-resolver.js';
@@ -10,15 +11,16 @@ describe('resolveHubPath', () => {
   let tmpRoot: string;
 
   beforeEach(async () => {
-    tmpRoot = await import('node:fs/promises').then((fs) => fs.mkdtemp('/tmp/wiki-viewer-'));
+    tmpRoot = await mkdtemp(join(tmpdir(), 'wiki-viewer-'));
     tmpHome = join(tmpRoot, 'home');
     await mkdir(tmpHome, { recursive: true });
     process.env = { ...originalEnv, HOME: tmpHome };
     delete process.env.WIKI_HUB_PATH;
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     process.env = { ...originalEnv };
+    await rm(tmpRoot, { recursive: true, force: true });
   });
 
   it('prefers WIKI_HUB_PATH over config and default paths', async () => {
@@ -58,6 +60,16 @@ describe('resolveHubPath', () => {
 
     expect(result.hubPath).toBe(join(tmpHome, 'wiki'));
     expect(result.source).toBe('default');
+  });
+
+  it('uses the OS home directory when HOME is unavailable', async () => {
+    process.env = { ...originalEnv, WIKI_HUB_PATH: '~/env-wiki' };
+    delete process.env.HOME;
+
+    const result = await resolveHubPath();
+
+    expect(result.hubPath).toBe(join(homedir(), 'env-wiki'));
+    expect(result.source).toBe('env');
   });
 
   it('does not use legacy resolved_path as the primary config value', async () => {

@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { CheckedPath, HubResolution, HubSource } from './types.js';
 import { expandLeadingTilde } from './path-utils.js';
@@ -19,7 +20,7 @@ async function readConfig(configPath: string): Promise<ConfigFile | null> {
 }
 
 export async function resolveHubPath(): Promise<HubResolution> {
-  const home = process.env.HOME ?? '';
+  const home = process.env.HOME ?? homedir();
   const checkedPaths: CheckedPath[] = [];
 
   const envPath = process.env.WIKI_HUB_PATH?.trim();
@@ -42,7 +43,7 @@ export async function resolveHubPath(): Promise<HubResolution> {
   checkedPaths.push({
     label: 'config hub_path',
     path: configPath,
-    status: config ? 'missing' : 'missing',
+    status: 'missing',
     message: config && typeof config.resolved_path === 'string' ? 'legacy resolved_path ignored' : undefined,
   });
 
