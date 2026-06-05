@@ -120,6 +120,8 @@ title: [broken
       body: badContent,
     });
     expect(document?.warnings[0]).toContain('frontmatter parse failed');
+    expect(index.status.warnings.some((warning) => warning.includes('topics/ml-training/wiki/concepts/broken.md'))).toBe(true);
+    expect(index.status.warnings.some((warning) => warning.includes('frontmatter parse failed'))).toBe(true);
   });
 
   it('falls back to topic directories when wikis.json is missing', async () => {
@@ -144,6 +146,20 @@ title: [broken
     expect(index.status.ready).toBe(true);
     expect(index.status.warnings.some((warning) => warning.includes('wikis.json invalid'))).toBe(true);
     expect(index.topics.map((topic) => topic.slug)).toContain('unregistered');
+  });
+
+  it('warns and falls back to topic directories when wikis.json is an array', async () => {
+    const hubPath = await createTempHubWithoutRegistry();
+    await writeFile(join(hubPath, 'wikis.json'), '[]', 'utf8');
+
+    const index = await buildWikiIndex(hubPath);
+
+    expect(index.status.ready).toBe(true);
+    expect(index.status.warnings.some((warning) => warning.includes('wikis.json invalid'))).toBe(true);
+    expect(index.topics.find((topic) => topic.slug === 'unregistered')).toMatchObject({
+      slug: 'unregistered',
+      counts: { wiki: 1, total: 1 },
+    });
   });
 
   it('continues indexing the topic when one discovered markdown file cannot be read', async () => {

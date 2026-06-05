@@ -141,14 +141,14 @@ function titleFromBody(body: string, filePath: string): string {
 async function readRegistry(hubPath: string, warnings: string[]): Promise<Registry> {
   try {
     const parsed = JSON.parse(await readFile(join(hubPath, 'wikis.json'), 'utf8')) as unknown;
-    if (!parsed || typeof parsed !== 'object') {
-      warnings.push('wikis.json is invalid: expected an object');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      warnings.push('wikis.json invalid: expected an object');
       return { wikis: {} };
     }
 
     const wikis = (parsed as Record<string, unknown>).wikis;
     if (wikis !== undefined && (!wikis || typeof wikis !== 'object' || Array.isArray(wikis))) {
-      warnings.push('wikis.json is invalid: expected wikis object');
+      warnings.push('wikis.json invalid: expected wikis object');
       return { wikis: {} };
     }
 
@@ -257,6 +257,7 @@ export async function buildWikiIndex(hubPath: string, options: BuildOptions = {}
       }
 
       const parsed = parseMarkdownFile(content);
+      warnings.push(...parsed.warnings.map((warning) => `${relativePath}: ${warning}`));
       const kind = kindForPath(topicRelativePath);
       const document: WikiDocument = {
         id: stableId([slug, relativePath]),
