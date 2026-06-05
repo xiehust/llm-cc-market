@@ -62,21 +62,32 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
           </div>
           {graph.nodes.length > 0 ? (
             <div className="graph-node-list" aria-label="Graph nodes">
-              {graph.nodes.map((node) => (
-                <button
-                  aria-label={node.label}
-                  className="document-card graph-node-button"
-                  key={node.id}
-                  onClick={() => {
-                    const documentId = node.documentId ?? (node.type === 'document' ? node.id : undefined);
-                    if (documentId) onOpenDocument(documentId);
-                  }}
-                  type="button"
-                >
-                  <span className="document-title">{node.label}</span>
-                  <span className="document-summary">{node.topic ?? node.type}</span>
-                </button>
-              ))}
+              {graph.nodes.map((node) => {
+                const documentId = node.type === 'document' ? (node.documentId ?? node.id) : undefined;
+                const nodeSummary = node.topic ?? node.type;
+
+                if (!documentId) {
+                  return (
+                    <span className="document-card graph-node-static" key={node.id}>
+                      <span className="document-title">{node.label}</span>
+                      <span className="document-summary">{nodeSummary}</span>
+                    </span>
+                  );
+                }
+
+                return (
+                  <button
+                    aria-label={node.label}
+                    className="document-card graph-node-button"
+                    key={node.id}
+                    onClick={() => onOpenDocument(documentId)}
+                    type="button"
+                  >
+                    <span className="document-title">{node.label}</span>
+                    <span className="document-summary">{nodeSummary}</span>
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <section className="empty-state">

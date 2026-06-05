@@ -74,9 +74,15 @@ describe('App', () => {
               summary: 'Install keyring before CUDA packages.',
               weight: 3,
             },
+            {
+              id: 'tag:cuda',
+              type: 'tag',
+              label: 'cuda',
+              weight: 2,
+            },
           ],
           edges: [],
-          stats: { nodeCount: 1, edgeCount: 0, omittedNodeCount: 0, omittedEdgeCount: 0 },
+          stats: { nodeCount: 2, edgeCount: 0, omittedNodeCount: 0, omittedEdgeCount: 0 },
         });
       }
       return Response.json({});
@@ -88,6 +94,8 @@ describe('App', () => {
 
     expect(await screen.findByText('Knowledge Graph')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'CUDA setup' })).toBeInTheDocument();
+    expect(await screen.findByText('cuda')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'cuda' })).not.toBeInTheDocument();
   });
 
   it('renders setup guidance when the hub is missing', async () => {
