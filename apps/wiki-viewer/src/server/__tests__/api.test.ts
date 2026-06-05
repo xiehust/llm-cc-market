@@ -58,6 +58,7 @@ describe('API routes', () => {
       const document = await fetch(`${baseUrl}/api/documents/${docId}`).then((res) => res.json());
       expect(document.title).toBe('Lessons Learned: CUDA setup');
       expect(document.body).toContain('Install keyring first');
+      expect(document).not.toHaveProperty('absolutePath');
 
       const missing = await fetch(`${baseUrl}/api/topics/missing-topic`);
       expect(missing.status).toBe(404);

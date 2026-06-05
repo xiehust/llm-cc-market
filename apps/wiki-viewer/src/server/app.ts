@@ -10,6 +10,7 @@ interface AppOptions {
 
 type TopicDto = Omit<WikiTopic, 'absolutePath'>;
 type DocumentSummaryDto = Omit<WikiDocument, 'absolutePath' | 'body'>;
+type DocumentDetailDto = Omit<WikiDocument, 'absolutePath'>;
 type SearchResultDto = DocumentSummaryDto & Pick<SearchResult, 'score' | 'snippet'>;
 
 function includeArchivedParam(value: unknown): boolean {
@@ -37,6 +38,11 @@ function serializeTopic(topic: WikiTopic): TopicDto {
 
 function serializeDocumentSummary(document: WikiDocument): DocumentSummaryDto {
   const { absolutePath: _absolutePath, body: _body, ...dto } = document;
+  return dto;
+}
+
+function serializeDocumentDetail(document: WikiDocument): DocumentDetailDto {
+  const { absolutePath: _absolutePath, ...dto } = document;
   return dto;
 }
 
@@ -126,7 +132,7 @@ export function createApp(options: AppOptions = {}): express.Express {
         return;
       }
 
-      res.json(document);
+      res.json(serializeDocumentDetail(document));
     }),
   );
 
