@@ -38,9 +38,21 @@ describe('API routes', () => {
 
       const search = await fetch(`${baseUrl}/api/search?q=cuda`).then((res) => res.json());
       expect(search.results.length).toBeGreaterThan(0);
+      expect(search.results[0]).toMatchObject({
+        title: 'CUDA Packages',
+        snippet: expect.any(String),
+        score: expect.any(Number),
+      });
+      expect(search.results[0]).not.toHaveProperty('body');
+      expect(search.results[0]).not.toHaveProperty('absolutePath');
+
+      const archivedSearch = await fetch(`${baseUrl}/api/search?q=legacy`).then((res) => res.json());
+      expect(archivedSearch.results).toHaveLength(0);
 
       const topic = await fetch(`${baseUrl}/api/topics/ml-training`).then((res) => res.json());
       expect(topic.documents.raw).toHaveLength(1);
+      expect(topic.documents.raw[0]).not.toHaveProperty('body');
+      expect(topic.documents.raw[0]).not.toHaveProperty('absolutePath');
 
       const docId = topic.documents.raw[0].id;
       const document = await fetch(`${baseUrl}/api/documents/${docId}`).then((res) => res.json());
@@ -49,6 +61,11 @@ describe('API routes', () => {
 
       const missing = await fetch(`${baseUrl}/api/topics/missing-topic`);
       expect(missing.status).toBe(404);
+
+      const missingApi = await fetch(`${baseUrl}/api/not-a-route`);
+      expect(missingApi.status).toBe(404);
+      expect(missingApi.headers.get('content-type')).toContain('application/json');
+      await expect(missingApi.json()).resolves.toMatchObject({ error: expect.any(String) });
     } finally {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }

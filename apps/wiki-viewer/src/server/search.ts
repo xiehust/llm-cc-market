@@ -28,14 +28,14 @@ function queryTerms(query: string): string[] {
   return [...new Set(normalize(query).split(/\s+/).filter(Boolean))];
 }
 
-function countMatches(value: string | undefined, terms: string[]): number {
+function countMatches(value: string | undefined, terms: string[], capPerTerm = 1): number {
   if (!value) return 0;
 
   const normalized = normalize(value);
   return terms.reduce((count, term) => {
     let matches = 0;
     let index = normalized.indexOf(term);
-    while (index !== -1) {
+    while (index !== -1 && matches < capPerTerm) {
       matches += 1;
       index = normalized.indexOf(term, index + term.length);
     }

@@ -1,12 +1,16 @@
 import express, { type ErrorRequestHandler, type NextFunction, type Request, type Response } from 'express';
 import { resolveHubPath } from './hub-resolver.js';
-import { searchDocuments } from './search.js';
-import type { WikiDocument, WikiIndex } from './types.js';
+import { searchDocuments, type SearchResult } from './search.js';
+import type { WikiDocument, WikiIndex, WikiTopic } from './types.js';
 import { buildWikiIndex } from './wiki-index.js';
 
 interface AppOptions {
   hubPath?: string;
 }
+
+type TopicDto = Omit<WikiTopic, 'absolutePath'>;
+type DocumentSummaryDto = Omit<WikiDocument, 'absolutePath' | 'body'>;
+type SearchResultDto = DocumentSummaryDto & Pick<SearchResult, 'score' | 'snippet'>;
 
 function includeArchivedParam(value: unknown): boolean {
   return value === 'true' || value === '1';
@@ -26,11 +30,30 @@ function documentGroupKey(document: WikiDocument): string {
   return document.kind === 'wiki' ? (document.category ?? document.kind) : document.kind;
 }
 
-function groupDocuments(documents: WikiDocument[]): Record<string, WikiDocument[]> {
-  return documents.reduce<Record<string, WikiDocument[]>>((groups, document) => {
+function serializeTopic(topic: WikiTopic): TopicDto {
+  const { absolutePath: _absolutePath, ...dto } = topic;
+  return dto;
+}
+
+function serializeDocumentSummary(document: WikiDocument): DocumentSummaryDto {
+  const { absolutePath: _absolutePath, body: _body, ...dto } = document;
+  return dto;
+}
+
+function serializeSearchResult(result: SearchResult): SearchResultDto {
+  const { absolutePath: _absolutePath, body: _body, score, snippet, ...dto } = result;
+  return {
+    ...dto,
+    score,
+    snippet,
+  };
+}
+
+function groupDocuments(documents: WikiDocument[]): Record<string, DocumentSummaryDto[]> {
+  return documents.reduce<Record<string, DocumentSummaryDto[]>>((groups, document) => {
     const key = documentGroupKey(document);
     groups[key] ??= [];
-    groups[key].push(document);
+    groups[key].push(serializeDocumentSummary(document));
     return groups;
   }, {});
 }
@@ -71,7 +94,7 @@ export function createApp(options: AppOptions = {}): express.Express {
     wrapRoute(async (req, res) => {
       const includeArchived = includeArchivedParam(req.query.includeArchived);
       const index = await loadIndex(includeArchived);
-      res.json(index.topics);
+      res.json(index.topics.map(serializeTopic));
     }),
   );
 
@@ -87,7 +110,7 @@ export function createApp(options: AppOptions = {}): express.Express {
       }
 
       res.json({
-        topic,
+        topic: serializeTopic(topic),
         documents: groupDocuments(index.documents.filter((document) => document.topic === topic.slug)),
       });
     }),
@@ -114,9 +137,14 @@ export function createApp(options: AppOptions = {}): express.Express {
       const topic = textParam(req.query.topic);
       const includeArchived = includeArchivedParam(req.query.includeArchived);
       const index = await loadIndex(includeArchived);
-      res.json({ results: searchDocuments(index.documents, { q, topic, includeArchived }) });
+      const results = searchDocuments(index.documents, { q, topic, includeArchived }).map(serializeSearchResult);
+      res.json({ results });
     }),
   );
+
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ error: 'api route not found' });
+  });
 
   const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
