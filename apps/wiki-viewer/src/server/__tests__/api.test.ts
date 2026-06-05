@@ -34,6 +34,8 @@ describe('API routes', () => {
 
       const topics = await fetch(`${baseUrl}/api/topics`).then((res) => res.json());
       expect(topics[0]).toMatchObject({ slug: 'ml-training' });
+      expect(topics[0]).not.toHaveProperty('path');
+      expect(topics[0]).not.toHaveProperty('absolutePath');
       expect(topics.some((topic: { slug: string }) => topic.slug === 'old-topic')).toBe(false);
 
       const search = await fetch(`${baseUrl}/api/search?q=cuda`).then((res) => res.json());
@@ -44,20 +46,28 @@ describe('API routes', () => {
         score: expect.any(Number),
       });
       expect(search.results[0]).not.toHaveProperty('body');
+      expect(search.results[0]).not.toHaveProperty('path');
+      expect(search.results[0]).not.toHaveProperty('topicPath');
       expect(search.results[0]).not.toHaveProperty('absolutePath');
 
       const archivedSearch = await fetch(`${baseUrl}/api/search?q=legacy`).then((res) => res.json());
       expect(archivedSearch.results).toHaveLength(0);
 
       const topic = await fetch(`${baseUrl}/api/topics/ml-training`).then((res) => res.json());
+      expect(topic.topic).not.toHaveProperty('path');
+      expect(topic.topic).not.toHaveProperty('absolutePath');
       expect(topic.documents.raw).toHaveLength(1);
       expect(topic.documents.raw[0]).not.toHaveProperty('body');
+      expect(topic.documents.raw[0]).not.toHaveProperty('path');
+      expect(topic.documents.raw[0]).not.toHaveProperty('topicPath');
       expect(topic.documents.raw[0]).not.toHaveProperty('absolutePath');
 
       const docId = topic.documents.raw[0].id;
       const document = await fetch(`${baseUrl}/api/documents/${docId}`).then((res) => res.json());
       expect(document.title).toBe('Lessons Learned: CUDA setup');
       expect(document.body).toContain('Install keyring first');
+      expect(document).not.toHaveProperty('path');
+      expect(document).not.toHaveProperty('topicPath');
       expect(document).not.toHaveProperty('absolutePath');
 
       const missing = await fetch(`${baseUrl}/api/topics/missing-topic`);

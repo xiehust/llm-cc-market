@@ -8,9 +8,9 @@ interface AppOptions {
   hubPath?: string;
 }
 
-type TopicDto = Omit<WikiTopic, 'absolutePath'>;
-type DocumentSummaryDto = Omit<WikiDocument, 'absolutePath' | 'body'>;
-type DocumentDetailDto = Omit<WikiDocument, 'absolutePath'>;
+type TopicDto = Omit<WikiTopic, 'absolutePath' | 'path'>;
+type DocumentSummaryDto = Omit<WikiDocument, 'absolutePath' | 'topicPath' | 'body'>;
+type DocumentDetailDto = Omit<WikiDocument, 'absolutePath' | 'topicPath'>;
 type SearchResultDto = DocumentSummaryDto & Pick<SearchResult, 'score' | 'snippet'>;
 
 function includeArchivedParam(value: unknown): boolean {
@@ -32,26 +32,45 @@ function documentGroupKey(document: WikiDocument): string {
 }
 
 function serializeTopic(topic: WikiTopic): TopicDto {
-  const { absolutePath: _absolutePath, ...dto } = topic;
-  return dto;
+  return {
+    slug: topic.slug,
+    description: topic.description,
+    archived: topic.archived,
+    counts: topic.counts,
+    updated: topic.updated,
+  };
 }
 
 function serializeDocumentSummary(document: WikiDocument): DocumentSummaryDto {
-  const { absolutePath: _absolutePath, body: _body, ...dto } = document;
-  return dto;
+  return {
+    id: document.id,
+    topic: document.topic,
+    relativePath: document.relativePath,
+    kind: document.kind,
+    category: document.category,
+    title: document.title,
+    summary: document.summary,
+    tags: document.tags,
+    dates: document.dates,
+    confidence: document.confidence,
+    source: document.source,
+    archived: document.archived,
+    warnings: document.warnings,
+  };
 }
 
 function serializeDocumentDetail(document: WikiDocument): DocumentDetailDto {
-  const { absolutePath: _absolutePath, ...dto } = document;
-  return dto;
+  return {
+    ...serializeDocumentSummary(document),
+    body: document.body,
+  };
 }
 
 function serializeSearchResult(result: SearchResult): SearchResultDto {
-  const { absolutePath: _absolutePath, body: _body, score, snippet, ...dto } = result;
   return {
-    ...dto,
-    score,
-    snippet,
+    ...serializeDocumentSummary(result),
+    score: result.score,
+    snippet: result.snippet,
   };
 }
 
