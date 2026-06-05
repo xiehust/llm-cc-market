@@ -297,6 +297,13 @@ describe('buildKnowledgeGraph', () => {
     expect(sameTagEdges).toHaveLength(20);
   });
 
+  it('prioritizes direct document links when maxEdges caps mixed edge types', () => {
+    const graph = buildKnowledgeGraph(indexFixture(), { maxEdges: 1 });
+
+    expect(graph.edges).toHaveLength(1);
+    expect(graph.edges[0]).toMatchObject({ type: 'links_to' });
+  });
+
   it('applies maxNodes and maxEdges caps with omitted counts', () => {
     const largeIndex = indexFixture();
     largeIndex.documents = Array.from({ length: 20 }, (_, index) =>

@@ -745,6 +745,12 @@ code {
   font-weight: 950;
 }
 
+.graph-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .reader-layout {
   display: grid;
   grid-template-columns: minmax(210px, 280px) minmax(0, 1fr);

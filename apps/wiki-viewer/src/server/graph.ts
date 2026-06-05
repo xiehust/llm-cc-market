@@ -64,10 +64,10 @@ const NODE_TYPE_ORDER: Record<GraphNodeType, number> = {
 };
 
 const EDGE_TYPE_ORDER: Record<GraphEdgeType, number> = {
-  belongs_to_topic: 0,
-  has_tag: 1,
-  links_to: 2,
-  cites_source: 3,
+  links_to: 0,
+  belongs_to_topic: 1,
+  cites_source: 2,
+  has_tag: 3,
   same_tag: 4,
 };
 

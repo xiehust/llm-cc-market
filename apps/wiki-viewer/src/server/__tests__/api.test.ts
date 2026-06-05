@@ -77,6 +77,10 @@ describe('API routes', () => {
       expect(JSON.stringify(graph)).not.toContain(hubPath);
       expect(JSON.stringify(graph)).not.toContain('absolutePath');
 
+      const archivedGraph = await fetch(`${baseUrl}/api/graph?includeArchived=true`).then((res) => res.json());
+      expect(archivedGraph.nodes.some((node: { id: string }) => node.id === 'topic:old-topic')).toBe(true);
+      expect(archivedGraph.nodes.some((node: { archived?: boolean }) => node.archived === true)).toBe(true);
+
       const topicGraph = await fetch(`${baseUrl}/api/graph?topic=ml-training`).then((res) => res.json());
       const topicDocumentNodes = topicGraph.nodes.filter((node: { type: string }) => node.type === 'document');
       expect(topicDocumentNodes.length).toBeGreaterThan(0);

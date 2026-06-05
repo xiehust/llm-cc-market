@@ -184,6 +184,81 @@ describe('App', () => {
     expect(screen.getByText('CUDA body text.')).toBeInTheDocument();
   });
 
+  it('uses in-graph archive, depth, and document focus controls for graph requests', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    fetchMock.mockImplementation(async (url) => {
+      const textUrl = String(url);
+      if (textUrl.includes('/api/status')) {
+        return Response.json({ ready: true, hubPath: '/tmp/wiki', warnings: [], topicCount: 1, documentCount: 1 });
+      }
+      if (textUrl.includes('/api/topics')) {
+        return Response.json([
+          {
+            slug: 'ml-training',
+            description: 'Training lessons',
+            archived: false,
+            counts: { raw: 1, wiki: 0, proposals: 0, inventory: 0, output: 0, total: 1 },
+          },
+        ]);
+      }
+      if (textUrl.includes('/api/graph')) {
+        return Response.json({
+          nodes: [
+            {
+              id: 'doc-cuda',
+              type: 'document',
+              label: 'CUDA setup',
+              topic: 'ml-training',
+              documentId: 'doc-cuda',
+              documentKind: 'raw',
+              archived: false,
+              summary: 'CUDA note',
+              weight: 3,
+            },
+          ],
+          edges: [],
+          stats: { nodeCount: 1, edgeCount: 0, omittedNodeCount: 0, omittedEdgeCount: 0 },
+        });
+      }
+      return Response.json({});
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Graph' }));
+    expect(await screen.findByText('Knowledge Graph')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Include archived graph content'));
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([calledUrl]) => String(calledUrl).includes('/api/graph') && String(calledUrl).includes('includeArchived=true'))).toBe(
+        true,
+      ),
+    );
+
+    fireEvent.change(screen.getByLabelText('Graph depth'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Select CUDA setup' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Focus neighborhood' }));
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(([calledUrl]) => {
+          const textUrl = String(calledUrl);
+          return textUrl.includes('/api/graph') && textUrl.includes('documentId=doc-cuda') && textUrl.includes('depth=3');
+        }),
+      ).toBe(true),
+    );
+
+    const callsBeforeClear = fetchMock.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Clear focus' }));
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.slice(callsBeforeClear).some(([calledUrl]) => {
+          const textUrl = String(calledUrl);
+          return textUrl.includes('/api/graph') && textUrl.includes('depth=3') && !textUrl.includes('documentId=doc-cuda');
+        }),
+      ).toBe(true),
+    );
+  });
+
   it('renders setup guidance when the hub is missing', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
       Response.json({

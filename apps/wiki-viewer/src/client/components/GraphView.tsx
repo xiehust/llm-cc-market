@@ -32,6 +32,13 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
   const [nodeTypes, setNodeTypes] = useState<GraphNodeType[]>(NODE_TYPE_OPTIONS);
   const [edgeTypes, setEdgeTypes] = useState<GraphEdgeType[]>(EDGE_TYPE_OPTIONS);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [graphIncludeArchived, setGraphIncludeArchived] = useState(includeArchived);
+  const [depth, setDepth] = useState(1);
+  const [focusedDocumentId, setFocusedDocumentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setGraphIncludeArchived(includeArchived);
+  }, [includeArchived]);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,8 +46,10 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
     setError(null);
 
     getGraph({
-      includeArchived,
+      includeArchived: graphIncludeArchived,
       topic: selectedTopic || undefined,
+      documentId: focusedDocumentId || undefined,
+      depth,
       nodeTypes,
       edgeTypes,
     })
@@ -66,7 +75,7 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
     return () => {
       cancelled = true;
     };
-  }, [edgeTypes, includeArchived, nodeTypes, selectedTopic]);
+  }, [depth, edgeTypes, focusedDocumentId, graphIncludeArchived, nodeTypes, selectedTopic]);
 
   const selectedNode = useMemo(() => {
     if (!graph || !selectedNodeId) return null;
@@ -125,6 +134,28 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
             ))}
           </select>
         </label>
+        <label className="graph-topic-control">
+          <span>Depth</span>
+          <select aria-label="Graph depth" onChange={(event) => setDepth(Number(event.target.value))} value={depth}>
+            <option value={1}>1</option>
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+          </select>
+        </label>
+        <label className="graph-check">
+          <input
+            aria-label="Include archived graph content"
+            checked={graphIncludeArchived}
+            onChange={(event) => setGraphIncludeArchived(event.target.checked)}
+            type="checkbox"
+          />
+          <span>Archive</span>
+        </label>
+        {focusedDocumentId ? (
+          <button className="pixel-button" onClick={() => setFocusedDocumentId(null)} type="button">
+            Clear focus
+          </button>
+        ) : null}
         <fieldset>
           <legend>Node types</legend>
           <div className="graph-check-grid">
@@ -200,13 +231,22 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
                       </div>
                     </dl>
                     {selectedNode.documentId ? (
-                      <button
-                        className="pixel-button primary"
-                        onClick={() => onOpenDocument(selectedNode.documentId as string)}
-                        type="button"
-                      >
-                        Open document
-                      </button>
+                      <div className="graph-detail-actions">
+                        <button
+                          className="pixel-button primary"
+                          onClick={() => onOpenDocument(selectedNode.documentId as string)}
+                          type="button"
+                        >
+                          Open document
+                        </button>
+                        <button
+                          className="pixel-button"
+                          onClick={() => setFocusedDocumentId(selectedNode.documentId as string)}
+                          type="button"
+                        >
+                          Focus neighborhood
+                        </button>
+                      </div>
                     ) : null}
                   </>
                 ) : (
