@@ -151,12 +151,6 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
 
       {graph && !error ? (
         <div className="graph-shell">
-          <div className="graph-summary">
-            <Badge tone="blue">{graph.stats.nodeCount} nodes</Badge>
-            <Badge tone="green">{graph.stats.edgeCount} edges</Badge>
-            <Badge tone="amber">{graph.stats.omittedNodeCount} omitted nodes</Badge>
-            <Badge tone="violet">{graph.stats.omittedEdgeCount} omitted edges</Badge>
-          </div>
           {graph.nodes.length > 0 ? (
             <div className="graph-workbench">
               <GraphCanvas
@@ -166,6 +160,12 @@ export default function GraphView({ includeArchived, topics, onBack, onOpenDocum
                 selectedNodeId={selectedNodeId}
               />
               <aside className="graph-detail-panel" aria-label="Selected graph node">
+                <div className="graph-summary" aria-label="Graph stats">
+                  <Badge tone="blue">{graph.stats.nodeCount} nodes</Badge>
+                  <Badge tone="green">{graph.stats.edgeCount} edges</Badge>
+                  <Badge tone="amber">{graph.stats.omittedNodeCount} omitted nodes</Badge>
+                  <Badge tone="violet">{graph.stats.omittedEdgeCount} omitted edges</Badge>
+                </div>
                 {selectedNode ? (
                   <>
                     <div className="graph-detail-header">

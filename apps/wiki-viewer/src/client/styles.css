@@ -584,6 +584,10 @@ code {
   margin-bottom: 16px;
 }
 
+.graph-detail-panel .graph-summary {
+  margin-bottom: 0;
+}
+
 .graph-workbench {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);

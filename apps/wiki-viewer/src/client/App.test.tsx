@@ -145,6 +145,9 @@ describe('App', () => {
 
     expect(await screen.findByText('Knowledge Graph')).toBeInTheDocument();
     fireEvent.click(await screen.findByRole('button', { name: 'Select CUDA setup' }));
+    const detailPanel = screen.getByLabelText('Selected graph node');
+    expect(within(detailPanel).getByText('3 nodes')).toBeInTheDocument();
+    expect(within(detailPanel).getByText('2 edges')).toBeInTheDocument();
     expect(screen.getByText('CUDA note')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open document' })).toBeInTheDocument();
 
