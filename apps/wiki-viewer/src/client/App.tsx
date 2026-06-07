@@ -164,7 +164,9 @@ export default function App() {
             slug={view.slug}
           />
         ) : null}
-        {view.name === 'reader' ? <ReaderView documentId={view.id} onBack={backFromReader} /> : null}
+        {view.name === 'reader' ? (
+          <ReaderView documentId={view.id} onBack={backFromReader} onOpenDocument={openDocument} />
+        ) : null}
       </main>
     </div>
   );
