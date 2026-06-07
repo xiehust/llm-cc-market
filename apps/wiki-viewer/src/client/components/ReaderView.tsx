@@ -1,12 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Badge from './Badge';
-import { getDocument, type DocumentDetailDto } from '../api';
+import { getDocument, getDocumentByPath, type DocumentDetailDto } from '../api';
 
 interface ReaderViewProps {
   documentId: string;
   onBack: () => void;
+  onOpenDocument: (id: string) => void;
+}
+
+// Links inside an external scheme (http:, mailto:, ...) or protocol-relative URLs leave the app.
+function isExternalHref(href: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//');
 }
 
 function sourceLabel(source: unknown): string | null {
@@ -16,11 +22,63 @@ function sourceLabel(source: unknown): string | null {
   return String(source);
 }
 
-export default function ReaderView({ documentId, onBack }: ReaderViewProps) {
+export default function ReaderView({ documentId, onBack, onOpenDocument }: ReaderViewProps) {
   const [document, setDocument] = useState<DocumentDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const requestId = useRef(0);
+
+  // Resolve a relative wiki link against the current document and navigate within the SPA,
+  // instead of letting the browser perform a full navigation that resets the app to home.
+  const navigateToRelative = useCallback(
+    async (href: string) => {
+      if (!document) return;
+      const resolved = new URL(href, `https://wiki.local/${document.relativePath}`);
+      const targetPath = decodeURIComponent(resolved.pathname).replace(/^\/+/, '');
+      try {
+        const target = await getDocumentByPath(targetPath);
+        onOpenDocument(target.id);
+      } catch (err) {
+        console.warn(`Could not resolve internal wiki link "${href}" -> "${targetPath}"`, err);
+      }
+    },
+    [document, onOpenDocument],
+  );
+
+  const markdownComponents = useMemo<Components>(
+    () => ({
+      a({ href, children, ...props }) {
+        const target = typeof href === 'string' ? href : '';
+        if (!target || target.startsWith('#')) {
+          return (
+            <a href={target} {...props}>
+              {children}
+            </a>
+          );
+        }
+        if (isExternalHref(target)) {
+          return (
+            <a href={target} target="_blank" rel="noreferrer noopener" {...props}>
+              {children}
+            </a>
+          );
+        }
+        return (
+          <a
+            href={target}
+            onClick={(event) => {
+              event.preventDefault();
+              void navigateToRelative(target);
+            }}
+            {...props}
+          >
+            {children}
+          </a>
+        );
+      },
+    }),
+    [navigateToRelative],
+  );
 
   useEffect(() => {
     let active = true;
@@ -123,7 +181,9 @@ export default function ReaderView({ documentId, onBack }: ReaderViewProps) {
             ) : null}
           </aside>
           <article className="markdown-body">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{document.body || '_No body content._'}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              {document.body || '_No body content._'}
+            </ReactMarkdown>
           </article>
         </div>
       ) : null}

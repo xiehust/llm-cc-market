@@ -148,6 +148,10 @@ export function getDocument(id: string, signal?: AbortSignal): Promise<DocumentD
   return fetchJson<DocumentDetailDto>(`/api/documents/${encodeURIComponent(id)}`, { signal });
 }
 
+export function getDocumentByPath(relativePath: string, signal?: AbortSignal): Promise<DocumentDetailDto> {
+  return fetchJson<DocumentDetailDto>(`/api/documents/by-path?path=${encodeURIComponent(relativePath)}`, { signal });
+}
+
 export function searchWiki(q: string, includeArchived: boolean, topic?: string): Promise<SearchResponseDto> {
   const params = new URLSearchParams({ q });
   if (includeArchived) params.set('includeArchived', 'true');

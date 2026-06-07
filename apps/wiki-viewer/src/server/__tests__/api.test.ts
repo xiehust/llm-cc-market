@@ -101,6 +101,19 @@ describe('API routes', () => {
       expect(tagEdgeGraph.edges.length).toBeGreaterThan(0);
       expect(tagEdgeGraph.edges.every((edge: { type: string }) => edge.type === 'has_tag')).toBe(true);
 
+      const byPath = await fetch(
+        `${baseUrl}/api/documents/by-path?path=${encodeURIComponent('topics/ml-training/raw/notes/2026-06-05-ll-cuda.md')}`,
+      ).then((res) => res.json());
+      expect(byPath.id).toBe(docId);
+      expect(byPath.title).toBe('Lessons Learned: CUDA setup');
+      expect(byPath.body).toContain('Install keyring first');
+
+      const byPathMissing = await fetch(`${baseUrl}/api/documents/by-path?path=topics/ml-training/raw/notes/nope.md`);
+      expect(byPathMissing.status).toBe(404);
+
+      const byPathNoQuery = await fetch(`${baseUrl}/api/documents/by-path`);
+      expect(byPathNoQuery.status).toBe(400);
+
       const missing = await fetch(`${baseUrl}/api/topics/missing-topic`);
       expect(missing.status).toBe(404);
 

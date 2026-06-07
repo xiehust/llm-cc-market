@@ -158,6 +158,26 @@ export function createApp(options: AppOptions = {}): express.Express {
   );
 
   app.get(
+    '/api/documents/by-path',
+    wrapRoute(async (req, res) => {
+      const relativePath = textParam(req.query.path);
+      if (!relativePath) {
+        res.status(400).json({ error: 'path query parameter is required' });
+        return;
+      }
+
+      const index = await loadIndex(true);
+      const document = index.documents.find((entry) => entry.relativePath === relativePath);
+      if (!document) {
+        res.status(404).json({ error: 'document not found' });
+        return;
+      }
+
+      res.json(serializeDocumentDetail(document));
+    }),
+  );
+
+  app.get(
     '/api/documents/:id',
     wrapRoute(async (req, res) => {
       const index = await loadIndex(true);

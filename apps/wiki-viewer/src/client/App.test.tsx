@@ -348,6 +348,110 @@ describe('App', () => {
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
   });
 
+  it('opens a linked document from a relative markdown link without resetting to home', async () => {
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn(),
+    });
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      const textUrl = String(url);
+      if (textUrl.includes('/api/status')) {
+        return Response.json({ ready: true, hubPath: '/tmp/wiki', warnings: [], topicCount: 1, documentCount: 2 });
+      }
+      if (textUrl.includes('/api/topics')) {
+        return Response.json([
+          {
+            slug: 'ml-training',
+            description: 'Training lessons',
+            archived: false,
+            counts: { raw: 0, wiki: 2, proposals: 0, inventory: 0, output: 0, total: 2 },
+          },
+        ]);
+      }
+      if (textUrl.includes('/api/search')) {
+        return Response.json({
+          results: [
+            {
+              id: 'source-id',
+              topic: 'ml-training',
+              relativePath: 'topics/ml-training/_index.md',
+              kind: 'index',
+              title: 'Index',
+              tags: [],
+              dates: {},
+              archived: false,
+              warnings: [],
+              score: 10,
+              snippet: 'Index hit',
+            },
+          ],
+        });
+      }
+      if (textUrl.includes('/api/documents/by-path')) {
+        // Resolves topics/ml-training/_index.md + 'raw/_index.md' -> topics/ml-training/raw/_index.md
+        expect(textUrl).toContain(encodeURIComponent('topics/ml-training/raw/_index.md'));
+        return Response.json({
+          id: 'target-id',
+          topic: 'ml-training',
+          relativePath: 'topics/ml-training/raw/_index.md',
+          kind: 'index',
+          title: 'Raw Sources Index',
+          tags: [],
+          dates: {},
+          archived: false,
+          warnings: [],
+          body: '# Raw Sources Index\n\nRaw target body.',
+        });
+      }
+      if (textUrl.includes('/api/documents/source-id')) {
+        return Response.json({
+          id: 'source-id',
+          topic: 'ml-training',
+          relativePath: 'topics/ml-training/_index.md',
+          kind: 'index',
+          title: 'Index',
+          tags: [],
+          dates: {},
+          archived: false,
+          warnings: [],
+          body: '# Index\n\nGo to [Raw Sources](raw/_index.md).',
+        });
+      }
+      if (textUrl.includes('/api/documents/target-id')) {
+        return Response.json({
+          id: 'target-id',
+          topic: 'ml-training',
+          relativePath: 'topics/ml-training/raw/_index.md',
+          kind: 'index',
+          title: 'Raw Sources Index',
+          tags: [],
+          dates: {},
+          archived: false,
+          warnings: [],
+          body: '# Raw Sources Index\n\nRaw target body.',
+        });
+      }
+      return Response.json({});
+    }) as typeof fetch;
+
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText('Search wiki'), { target: { value: 'index' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Open Index/ }));
+
+    const link = await screen.findByRole('link', { name: 'Raw Sources' });
+    expect(link).toHaveAttribute('href', 'raw/_index.md');
+
+    fireEvent.click(link);
+
+    // The SPA navigates internally to the linked document instead of resetting to home.
+    expect(await screen.findByRole('heading', { name: 'Raw Sources Index' })).toBeInTheDocument();
+    expect(screen.getByText('Raw target body.')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Wiki topics' })).not.toBeInTheDocument();
+  });
+
   it('paginates search results', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       const textUrl = String(url);

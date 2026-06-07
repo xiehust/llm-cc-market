@@ -9,7 +9,22 @@ interface TopicViewProps {
   onOpenDocument: (id: string) => void;
 }
 
-const GROUP_ORDER = ['raw', 'notes', 'wiki', 'decisions', 'inventory', 'proposal', 'output', 'config', 'log', 'index', 'other'];
+const GROUP_ORDER = [
+  'topic',
+  'concept',
+  'reference',
+  'raw',
+  'notes',
+  'wiki',
+  'decisions',
+  'inventory',
+  'proposal',
+  'output',
+  'config',
+  'log',
+  'index',
+  'other',
+];
 
 function sortGroups(documents: Record<string, DocumentSummaryDto[]>): string[] {
   return Object.keys(documents).sort((a, b) => {
