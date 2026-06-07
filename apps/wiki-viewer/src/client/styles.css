@@ -33,12 +33,52 @@ button {
   cursor: pointer;
 }
 
+/* Unified pixel-art dropdown. The native chevron is removed (appearance: none) and
+   replaced with a chunky stepped triangle drawn as a crisp-edged SVG, so every
+   <select> in the app matches the pixel-button / inset-shadow aesthetic. */
+select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 42px 0 12px;
+  border: 3px solid #211a18;
+  border-radius: 0;
+  background-color: #fffdf5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' shape-rendering='crispEdges'%3E%3Cpath fill='%23211a18' d='M0 0H10V2H8V4H6V6H4V4H2V2H0Z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px 9px;
+  color: #211a18;
+  font-weight: 800;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: 3px 3px 0 #211a18 inset;
+}
+
+select:hover {
+  background-color: #fff7d8;
+}
+
+select:focus-visible {
+  outline: 4px solid #fff24a;
+  outline-offset: 4px;
+  box-shadow:
+    3px 3px 0 #211a18 inset,
+    0 0 0 7px #1f5fbf;
+}
+
+select option {
+  background: #fffdf5;
+  color: #211a18;
+  font-weight: 700;
+}
+
 code {
   overflow-wrap: anywhere;
 }
 
 .app-shell {
-  width: min(1180px, calc(100% - 32px));
+  width: min(1600px, calc(100% - 32px));
   margin: 0 auto;
   padding: 24px 0 48px;
 }
@@ -146,8 +186,7 @@ code {
   gap: 12px;
 }
 
-.search-controls input,
-.search-controls select {
+.search-controls input {
   min-height: 46px;
   border: 3px solid #211a18;
   border-radius: 0;
@@ -158,7 +197,6 @@ code {
 }
 
 .search-controls input:focus-visible,
-.search-controls select:focus-visible,
 .archive-toggle input:focus-visible {
   outline: 4px solid #fff24a;
   outline-offset: 4px;
@@ -515,23 +553,13 @@ code {
   font-weight: 900;
 }
 
-.graph-topic-control select,
 .graph-controls fieldset {
   min-width: 0;
+  margin: 0;
+  padding: 10px;
   border: 3px solid #211a18;
   background: #fffdf5;
   box-shadow: 3px 3px 0 #211a18 inset;
-}
-
-.graph-topic-control select {
-  min-height: 44px;
-  border-radius: 0;
-  padding: 0 10px;
-}
-
-.graph-controls fieldset {
-  margin: 0;
-  padding: 10px;
 }
 
 .graph-controls legend {
@@ -597,6 +625,7 @@ code {
 }
 
 .graph-canvas-frame {
+  position: relative;
   min-width: 0;
   border: 4px solid #211a18;
   background:
@@ -608,11 +637,36 @@ code {
   overflow: hidden;
 }
 
+.graph-canvas-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.graph-canvas-controls .pixel-button {
+  width: 40px;
+  height: 36px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  text-align: center;
+}
+
 .graph-canvas {
   display: block;
   width: 100%;
   height: auto;
   min-height: 360px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.graph-canvas.is-panning {
+  cursor: grabbing;
 }
 
 .graph-edge {
