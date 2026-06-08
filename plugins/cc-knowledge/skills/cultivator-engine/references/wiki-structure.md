@@ -137,10 +137,34 @@ Last updated: YYYY-MM-DD
 - YYYY-MM-DD: Description
 ```
 
-## Dual-Link Format
+## Dual-Link Format (MANDATORY for every cross-reference)
 
-When cross-referencing between articles, use both formats:
+A bare `[[wikilink]]` is clickable **only inside Obsidian**. In GitHub, the VS Code
+Markdown preview, the web wiki viewer, and every other standard Markdown renderer it
+shows up as inert plain text. So **every** cross-reference to another wiki page MUST
+carry both halves: the Obsidian wikilink **immediately followed by** a real relative
+Markdown link.
 
 ```markdown
-[[slug|Display Name]] ([Display Name](../category/slug.md))
+[[slug|Display Name]] ([Display Name](relative/path/to/slug.md))
 ```
+
+- ✅ Correct: `[[agentcore-evaluations|AgentCore Evaluations]] ([AgentCore Evaluations](../../wiki/concepts/agentcore-evaluations.md))`
+- ❌ Wrong (Obsidian-only, dead text everywhere else): `[[agentcore-evaluations|AgentCore Evaluations]]`
+- ❌ Wrong (no fallback for non-Obsidian): `[[agentcore-evaluations]]`
+
+**The two halves must agree**: the `slug` in the wikilink, the display name, and the
+file the Markdown link points at all refer to the same page.
+
+**Computing the relative path** — it is relative to the file you are writing *from*,
+not from the topic root. Count the directory hops:
+
+| Writing from | Linking to | Relative path |
+|---|---|---|
+| `topics/<t>/raw/notes/foo.md` | `topics/<t>/wiki/concepts/bar.md` | `../../wiki/concepts/bar.md` |
+| `topics/<t>/wiki/concepts/foo.md` | `topics/<t>/wiki/concepts/bar.md` | `bar.md` |
+| `topics/<t>/wiki/concepts/foo.md` | `topics/<t>/raw/notes/bar.md` | `../../raw/notes/bar.md` |
+
+This applies everywhere a page references another page: raw notes, compiled articles,
+proposal bodies, and `_index.md` "Related" / "See also" entries. The model `agentcore-evaluations.md`
+follows this format — match it. **Never emit a `[[...]]` without its `(...)` sibling.**

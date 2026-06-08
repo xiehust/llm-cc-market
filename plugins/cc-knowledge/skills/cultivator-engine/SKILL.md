@@ -87,6 +87,8 @@ For each surviving lesson:
 **Propose, don't directly edit, polished articles:**
 If a lesson's Rule strongly matches an existing article in `<topic>/wiki/`, write the proposed append to `<topic>/.librarian/proposals/YYYY-MM-DD-<slug>.proposal.md` instead of editing the article.
 
+**Cross-references must be dual-link.** Any time the content you write (raw note, `_index.md` row, or proposal body) references another wiki page, emit BOTH the Obsidian wikilink and a real relative Markdown link — `[[slug|Name]] ([Name](relative/path.md))`. A bare `[[wikilink]]` is dead plain text outside Obsidian (GitHub, VS Code preview, web viewer). Never emit `[[...]]` without its `(...)` sibling. See the **Dual-Link Format** section in [wiki-structure.md](references/wiki-structure.md) for path-computation rules.
+
 ### Stage 5: Post-flight
 
 1. **Always**: delete the pending marker file (path in `CC_KNOWLEDGE_MARKER` env or the spawning prompt). Do this even on silent-exit.

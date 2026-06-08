@@ -77,6 +77,8 @@ Guidelines:
 - If strong match, write `<topic>/.librarian/proposals/YYYY-MM-DD-<slug>.proposal.md`
 - Report: "Proposal created for <article> — run /cc-knowledge:review"
 
+**Cross-references must be dual-link.** Whenever written content references another wiki page, emit BOTH halves — `[[slug|Name]] ([Name](relative/path.md))`. A bare `[[wikilink]]` is dead plain text outside Obsidian. See the **Dual-Link Format** section in [wiki-structure.md](../skills/cultivator-engine/references/wiki-structure.md).
+
 ### Stage 5: Post-flight
 
 1. Regenerate recall skill: run `node <plugin-root>/scripts/regen-skill.js <topic-name>` (where plugin-root is this plugin's directory)
