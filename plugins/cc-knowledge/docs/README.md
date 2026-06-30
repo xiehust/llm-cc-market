@@ -19,9 +19,11 @@ CC Knowledge Cultivator automatically extracts lessons from your sessions and st
 ```
 Session ends
      ↓
-Heuristic gate (≥8 msgs + edit/error/correction signal)
+Stage 1: weighted heuristic gate (≥8 msgs + score ≥ 4)
      ↓ passes
-Cultivator extracts lessons from transcript
+Stage 2: Haiku triage (durable lesson plausible? YES/NO, fails open)
+     ↓ YES
+Cultivator (Opus) extracts lessons from transcript
      ↓
 Writes to ~/wiki/topics/<domain>/raw/notes/
      ↓
@@ -33,7 +35,7 @@ Next session: Claude auto-discovers the skill → reads domain knowledge
 ### Key Features
 
 - **Zero-effort capture** — SessionEnd hook fires automatically; no manual commands needed
-- **Smart gating** — Only cultivates substantive sessions (has edits, errors, or corrections)
+- **Smart gating** — Two-stage gate (weighted heuristic score + cheap Haiku triage) only cultivates sessions likely to hold a durable, transferable lesson
 - **Per-domain organization** — Knowledge classified into topics (ml-training, aws-infra, etc.)
 - **Auto-recall** — Generated skills make Claude aware of past lessons without explicit queries
 - **Tiered autonomy** — New lessons auto-apply; modifications to existing articles require review
@@ -84,9 +86,10 @@ Just use Claude Code as you always do. Fix bugs, set up environments, write code
 
 When your session ends, the hook checks:
 - Did you exchange ≥8 messages?
-- Did you edit files, hit errors, or correct Claude?
+- Does the weighted signal score clear the bar (error→fix, corrections, multi-file edits)?
+- Does a quick Haiku triage think a durable, transferable lesson is plausible?
 
-If yes → lessons are extracted and stored automatically.
+If all pass → lessons are extracted and stored automatically.
 
 ### 3. Next session → Claude remembers
 
@@ -177,19 +180,23 @@ Show the cultivation dashboard.
 
 ### SessionEnd Hook
 
-The hook (`scripts/session-end-cultivate.js`) fires on every session end and applies a **deterministic heuristic gate** (no LLM call for gating):
+The hook (`scripts/session-end-cultivate.js`) fires on every session end and applies a **two-stage gate** so only substantive sessions ever reach the (expensive) Opus extractor:
 
-**Gate conditions (ALL must pass):**
-1. Session has ≥8 user messages
-2. At least ONE of:
-   - A file was edited (Edit/Write tool used)
-   - A Bash command returned an error
-   - The user corrected Claude ("no", "wrong", "use X instead", etc.)
+**Stage 1 — deterministic weighted heuristic (zero LLM tokens):**
+1. Session must have ≥8 user messages.
+2. A single-pass transcript scan produces a weighted score:
+   - error→fix sequence (an error later resolved by an edit): **+3 each**
+   - user correction ("no", "wrong", "use X instead", …): **+2 each**
+   - distinct files edited: **+1 each** (capped at 5)
+   - clearly non-trivial edit activity (>3 edits): **+1**
+3. The session passes only if `score ≥ 4`. A lone trivial edit scores 1 and is rejected — this is what stops unimportant topics from being cultivated.
 
-If the gate passes, the script:
+**Stage 2 — cheap LLM triage (Haiku):** before committing to a full Opus extraction, a short Haiku call sees a token-bounded excerpt of the session's user turns and answers YES/NO to "does ≥1 durable, transferable lesson plausibly exist?". Only YES proceeds. This stage **fails open** — any error, timeout, or missing `claude` binary proceeds to extraction rather than silently dropping the session.
+
+If both stages pass, the script:
 1. Extracts a topic hint from recent messages
-2. Spawns `claude -p` with the cultivator engine prompt
-3. Writes a pending marker to `~/.claude/cc-knowledge-pending/`
+2. Spawns `claude -p` (Opus) with the cultivator engine prompt
+3. Writes a pending marker (including the full gate signals) to `~/.claude/cc-knowledge-pending/`
 
 ### Extraction Pipeline (5 Stages)
 
@@ -290,11 +297,11 @@ Change it with:
 
 ### Gate Thresholds
 
-Default: ≥8 user messages + at least one signal. To adjust, edit:
-```
-plugins/cc-knowledge/scripts/session-end-cultivate.js
-```
-Change `MIN_MESSAGES = 8` to your preferred threshold.
+Defaults: ≥8 user messages **and** a weighted signal score ≥ 4. To adjust:
+- `MIN_MESSAGES` (message floor) in `plugins/cc-knowledge/scripts/session-end-cultivate.js`
+- `MIN_SESSION_SCORE` and `SCORE_WEIGHTS` (signal scoring) in `plugins/cc-knowledge/scripts/lib/utils.js`
+
+Lowering `MIN_SESSION_SCORE` makes the gate more permissive; raising it keeps the wiki cleaner. The Stage-2 Haiku triage runs only after Stage 1 passes and fails open, so it never blocks a session on its own.
 
 ---
 
@@ -326,8 +333,8 @@ Run `/cc-knowledge:init` to create the wiki hub.
 
 Check the gate criteria:
 - Your sessions need ≥8 user messages
-- AND at least one file edit, bash error, or user correction
-- Use `/cc-knowledge:cultivate` for manual extraction anytime
+- AND a weighted signal score ≥ 4 (error→fix +3, correction +2, distinct file +1, >3 edits +1)
+- A lone trivial edit will not clear the bar by design — use `/cc-knowledge:cultivate` for manual extraction anytime
 
 ### Pending markers accumulate
 

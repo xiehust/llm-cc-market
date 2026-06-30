@@ -4,7 +4,69 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { getWikiHub } = require('./lib/utils');
+const { getWikiHub, analyzeSession, MIN_SESSION_SCORE } = require('./lib/utils');
+
+let txCounter = 0;
+function writeTranscript(entries) {
+  const file = path.join(os.tmpdir(), `cc-knowledge-tx-${process.pid}-${txCounter++}.jsonl`);
+  fs.writeFileSync(file, entries.map(e => JSON.stringify(e)).join('\n'), 'utf8');
+  return file;
+}
+
+test('analyzeSession scores a lone trivial edit below threshold', () => {
+  const file = writeTranscript([
+    { type: 'user', content: 'fix typo in readme' },
+    { type: 'assistant', content: 'ok' },
+    { type: 'assistant', content: [{ type: 'tool_use', name: 'Edit', input: { file_path: '/repo/README.md' } }] }
+  ]);
+  try {
+    const s = analyzeSession(file);
+    assert.equal(s.editCount, 1);
+    assert.equal(s.distinctFiles, 1);
+    assert.ok(s.score < MIN_SESSION_SCORE, `expected score ${s.score} < ${MIN_SESSION_SCORE}`);
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
+});
+
+test('analyzeSession credits an error→fix sequence', () => {
+  const file = writeTranscript([
+    { type: 'user', content: 'run the build' },
+    { type: 'user', content: [{ type: 'tool_result', is_error: true, content: 'TypeError: boom' }] },
+    { type: 'assistant', content: [{ type: 'tool_use', name: 'Edit', input: { file_path: '/repo/src/a.js' } }] }
+  ]);
+  try {
+    const s = analyzeSession(file);
+    assert.equal(s.errorCount, 1);
+    assert.equal(s.errorFixCount, 1);
+    assert.ok(s.score >= MIN_SESSION_SCORE, `expected score ${s.score} >= ${MIN_SESSION_SCORE}`);
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
+});
+
+test('analyzeSession credits a user correction', () => {
+  const file = writeTranscript([
+    { type: 'user', content: 'add the helper' },
+    { type: 'user', content: "no, that's wrong — use the async variant instead" },
+    { type: 'assistant', content: [{ type: 'tool_use', name: 'Edit', input: { file_path: '/repo/src/b.js' } }] },
+    { type: 'assistant', content: [{ type: 'tool_use', name: 'Edit', input: { file_path: '/repo/src/c.js' } }] }
+  ]);
+  try {
+    const s = analyzeSession(file);
+    assert.equal(s.correctionCount, 1);
+    assert.equal(s.distinctFiles, 2);
+    assert.ok(s.score >= MIN_SESSION_SCORE, `expected score ${s.score} >= ${MIN_SESSION_SCORE}`);
+  } finally {
+    fs.rmSync(file, { force: true });
+  }
+});
+
+test('analyzeSession returns zero for missing transcript', () => {
+  const s = analyzeSession('/nonexistent/path.jsonl');
+  assert.equal(s.score, 0);
+  assert.equal(s.msgCount, 0);
+});
 
 function withTempHome(fn) {
   const previousHome = process.env.HOME;

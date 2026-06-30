@@ -117,13 +117,102 @@ function hasUserCorrections(transcriptPath) {
   const content = readFile(transcriptPath);
   if (!content) return false;
   const lines = content.split('\n');
-  const correctionPatterns = /\b(no[,.]?\s+(not|don't|that's wrong)|wrong\s|not that|use .+ instead|actually[,.]?\s+(you should|it should|we should|let's))/i;
   for (const line of lines) {
-    if (/"type"\s*:\s*"user"/.test(line) && correctionPatterns.test(line)) {
+    if (/"type"\s*:\s*"user"/.test(line) && CORRECTION_PATTERN.test(line)) {
       return true;
     }
   }
   return false;
+}
+
+const CORRECTION_PATTERN = /\b(no[,.]?\s+(not|don't|that's wrong)|wrong\s|not that|use .+ instead|actually[,.]?\s+(you should|it should|we should|let's))/i;
+
+const EDIT_TOOL_PATTERN = /"name"\s*:\s*"(Edit|Write|MultiEdit|NotebookEdit)"/g;
+const FILE_PATH_PATTERN = /"file_path"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+
+// Weights tuned for a STRICT gate ("宁可漏，保持 wiki 干净"):
+// a lone trivial edit scores 1 and is rejected; real signal (error→fix,
+// user corrections, multi-file work) is needed to clear MIN_SESSION_SCORE.
+const SCORE_WEIGHTS = {
+  errorFix: 3,      // an error followed later by an edit = genuine debugging
+  correction: 2,    // a user correcting Claude = a likely durable lesson
+  distinctFile: 1,  // breadth of change (capped)
+  manyEdits: 1      // bonus when edit activity is clearly non-trivial
+};
+const DISTINCT_FILE_CAP = 5;
+const MANY_EDITS_THRESHOLD = 3;
+const MIN_SESSION_SCORE = 4;
+
+/**
+ * Single-pass scan of a transcript producing weighted signals used to decide
+ * whether a session is worth mining for durable lessons. Returns a `score`
+ * plus the raw signal breakdown (also handy for the marker / triage prompt).
+ */
+function analyzeSession(transcriptPath) {
+  const empty = {
+    msgCount: 0,
+    editCount: 0,
+    distinctFiles: 0,
+    errorCount: 0,
+    errorFixCount: 0,
+    correctionCount: 0,
+    score: 0
+  };
+  const content = readFile(transcriptPath);
+  if (!content) return empty;
+
+  const lines = content.split('\n');
+  const files = new Set();
+  let msgCount = 0;
+  let editCount = 0;
+  let errorCount = 0;
+  let errorFixCount = 0;
+  let correctionCount = 0;
+  let pendingError = false;
+
+  for (const line of lines) {
+    if (!line) continue;
+    const isUser = /"type"\s*:\s*"user"/.test(line);
+    if (isUser) {
+      msgCount++;
+      if (CORRECTION_PATTERN.test(line)) correctionCount++;
+    }
+
+    const edits = line.match(EDIT_TOOL_PATTERN);
+    if (edits) {
+      editCount += edits.length;
+      let m;
+      const fileRe = new RegExp(FILE_PATH_PATTERN.source, 'g');
+      while ((m = fileRe.exec(line)) !== null) files.add(m[1]);
+      // An edit that resolves a previously-seen error = an error→fix sequence.
+      if (pendingError) {
+        errorFixCount++;
+        pendingError = false;
+      }
+    }
+
+    if (/"is_error"\s*:\s*true/.test(line)) {
+      errorCount++;
+      pendingError = true;
+    }
+  }
+
+  const distinctFiles = files.size;
+  const score =
+    errorFixCount * SCORE_WEIGHTS.errorFix +
+    correctionCount * SCORE_WEIGHTS.correction +
+    Math.min(distinctFiles, DISTINCT_FILE_CAP) * SCORE_WEIGHTS.distinctFile +
+    (editCount > MANY_EDITS_THRESHOLD ? SCORE_WEIGHTS.manyEdits : 0);
+
+  return {
+    msgCount,
+    editCount,
+    distinctFiles,
+    errorCount,
+    errorFixCount,
+    correctionCount,
+    score
+  };
 }
 
 function readWikisJson(hubPath) {
@@ -158,6 +247,8 @@ module.exports = {
   hasEditOrWriteTools,
   hasBashErrors,
   hasUserCorrections,
+  analyzeSession,
+  MIN_SESSION_SCORE,
   readWikisJson,
   getPendingDir,
   log

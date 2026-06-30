@@ -4,13 +4,12 @@ const path = require('path');
 const fs = require('fs');
 const { spawn, spawnSync } = require('child_process');
 const {
-  countTranscriptMessages,
-  hasEditOrWriteTools,
-  hasBashErrors,
-  hasUserCorrections,
+  analyzeSession,
+  MIN_SESSION_SCORE,
   getWikiHub,
   ensureDir,
   writeFile,
+  readFile,
   getPendingDir,
   getDateString,
   log
@@ -68,24 +67,33 @@ async function main() {
     process.exit(0);
   }
 
-  // Heuristic gate
-  const msgCount = countTranscriptMessages(transcriptPath);
-  if (msgCount < MIN_MESSAGES) {
+  // Stage 1 — cheap weighted heuristic gate (zero tokens).
+  // A lone trivial edit no longer qualifies; we require real signal
+  // (error→fix, user corrections, multi-file work) to clear the threshold.
+  const signals = analyzeSession(transcriptPath);
+  if (signals.msgCount < MIN_MESSAGES) {
     process.exit(0);
   }
-
-  const hasEdits = hasEditOrWriteTools(transcriptPath);
-  const hasErrors = hasBashErrors(transcriptPath);
-  const hasCorrections = hasUserCorrections(transcriptPath);
-
-  if (!hasEdits && !hasErrors && !hasCorrections) {
+  if (signals.score < MIN_SESSION_SCORE) {
+    log(`[cc-knowledge] Session below cultivation threshold (score=${signals.score} < ${MIN_SESSION_SCORE}) — skipping`);
     process.exit(0);
   }
 
   const topicHint = extractTopicHint(transcriptPath);
   const hubPath = getWikiHub();
 
-  log(`[cc-knowledge] Session qualifies for cultivation (${msgCount} msgs, edits=${hasEdits}, errors=${hasErrors}, corrections=${hasCorrections})`);
+  log(`[cc-knowledge] Session passed heuristic gate (score=${signals.score}: ${signals.editCount} edits across ${signals.distinctFiles} files, ${signals.errorFixCount} error→fix, ${signals.correctionCount} corrections)`);
+
+  // Stage 2 — cheap LLM triage (haiku) before committing to a full opus
+  // extraction. Asks a single yes/no: does ≥1 durable, transferable lesson
+  // plausibly exist here? Fails OPEN (proceeds) on any error so we never
+  // silently drop a session because triage was unavailable.
+  const claudePath = findClaude();
+  if (claudePath && !shouldCultivate(claudePath, transcriptPath, signals)) {
+    log('[cc-knowledge] Triage (haiku) judged session not worth extracting — skipping');
+    process.exit(0);
+  }
+
   log(`[cc-knowledge] Topic hint: "${topicHint}" | Hub: ${hubPath}`);
 
   // Write pending marker
@@ -98,14 +106,13 @@ async function main() {
     transcriptPath,
     timestamp: new Date().toISOString(),
     date: getDateString(),
-    gateSignals: { msgCount, hasEdits, hasErrors, hasCorrections },
+    gateSignals: signals,
     status: 'pending'
   };
 
   const markerPath = path.join(pendingDir, `${sessionId.slice(-12)}.json`);
 
-  // Try to spawn claude for automatic extraction
-  const claudePath = findClaude();
+  // Try to spawn claude for automatic extraction (claudePath resolved above).
   if (claudePath) {
     const skillPath = path.join(__dirname, '..', 'skills', 'cultivator-engine', 'SKILL.md');
     if (fs.existsSync(skillPath)) {
@@ -215,6 +222,94 @@ function findClaude() {
 
 function getHomeDir() {
   return require('os').homedir();
+}
+
+// Cheap LLM triage: ask haiku whether a durable, transferable lesson plausibly
+// exists. Synchronous + short timeout so it doesn't stall the SessionEnd hook.
+// Returns true (cultivate) on ANY uncertainty or error — fail open.
+function shouldCultivate(claudePath, transcriptPath, signals) {
+  let excerpt;
+  try {
+    excerpt = buildTriageExcerpt(transcriptPath);
+  } catch {
+    return true;
+  }
+  if (!excerpt) return true;
+
+  const prompt = buildTriagePrompt(excerpt, signals);
+  try {
+    const result = spawnSync(
+      claudePath,
+      ['-p', '--model', 'claude-haiku-4-5-20251001', prompt],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: 30000,
+        maxBuffer: 1024 * 1024
+      }
+    );
+    if (result.status !== 0 || !result.stdout) return true; // fail open
+    // Look at the first decisive token. Only an explicit NO skips cultivation.
+    const verdict = result.stdout.trim().toUpperCase();
+    if (/^\s*NO\b/.test(verdict) || /\bVERDICT\s*[:=]?\s*NO\b/.test(verdict)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return true; // fail open on timeout / spawn error
+  }
+}
+
+// Build a compact, token-bounded excerpt of user turns + error/correction
+// context for the triage model. We avoid resuming the full session here —
+// that's the expensive step we're trying to gate.
+function buildTriageExcerpt(transcriptPath, maxChars = 6000) {
+  const content = readFile(transcriptPath);
+  if (!content) return '';
+  const lines = content.split('\n').filter(Boolean);
+  const picked = [];
+  for (const line of lines) {
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (entry.type !== 'user') continue;
+    let text = '';
+    if (typeof entry.content === 'string') {
+      text = entry.content;
+    } else if (Array.isArray(entry.content)) {
+      text = entry.content
+        .filter(b => b && b.type === 'text' && typeof b.text === 'string')
+        .map(b => b.text)
+        .join(' ');
+    }
+    text = text.trim();
+    // Skip tool-result-only user turns and noise.
+    if (!text || text.startsWith('<')) continue;
+    picked.push(text.replace(/\s+/g, ' ').slice(0, 500));
+  }
+  // Keep the most recent turns, bounded by maxChars.
+  const recent = [];
+  let total = 0;
+  for (let i = picked.length - 1; i >= 0; i--) {
+    if (total + picked[i].length > maxChars) break;
+    recent.unshift(picked[i]);
+    total += picked[i].length;
+  }
+  return recent.map(t => `- ${t}`).join('\n');
+}
+
+function buildTriagePrompt(excerpt, signals) {
+  return `You are a strict triage filter for a knowledge wiki. Decide whether a Claude Code session is worth mining for a DURABLE, TRANSFERABLE lesson (a non-obvious gotcha, debugging insight, design tradeoff, or reusable pattern that generalizes beyond this one project).
+
+Heuristic signals already detected: ${signals.errorFixCount} error→fix sequence(s), ${signals.correctionCount} user correction(s), edits across ${signals.distinctFiles} file(s).
+
+User turns from the session (most recent last):
+${excerpt}
+
+Answer with exactly one word on the first line: YES if at least one durable transferable lesson plausibly exists, NO otherwise. Bias toward NO for routine activity, simple Q&A, happy-path edits, or project-specific trivia with no transferable rule.`;
 }
 
 function buildExtractionPrompt(hubPath, markerPath, topicHint) {
